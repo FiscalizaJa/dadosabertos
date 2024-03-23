@@ -1,0 +1,27 @@
+{
+  "name": "dadosabertos",
+  "version": "1.0.0",
+  "description": "Esta é a **plataforma de dados abertos do FiscalizaJá**. Um importante passo para o projeto, na direção de possibilitar o acesso ao uso de dinheiro público por nossos políticos.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "fastify": "^4.26.2",
+    "pino": "^8.19.0",
+    "pino-pretty": "^11.0.0",
+    "poku": "^1.9.2",
+    "postgres": "^3.4.4",
+    "tsx": "^4.7.1",
+    "zod": "^3.22.4"
+  }
+}
