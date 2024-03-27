@@ -1,7 +1,9 @@
 import postgres from "postgres";
+import dotenv from "dotenv";
 
-const database = postgres({
-    host: process.env.CAMARA_DATABASE_URL,
+dotenv.config()
+
+const database = postgres(process.env.CAMARA_DATABASE_URL, {
     transform: {
         undefined: null
     }
@@ -9,22 +11,34 @@ const database = postgres({
 
 export const prepareDB = async function() {
     await database`
-        CREATE TABLE deputy (
+        CREATE TABLE IF NOT EXISTS deputy (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             full_name TEXT NOT NULL,
             sex VARCHAR(2) NOT NULL,
-            initial_legislature INTEGER,
-            final_legislature INTEGER,
+            party TEXT,
+            cpf TEXT,
             birth_date TEXT NOT NULL,
-            death_date TEXT,
-            birth_uf TEXT,
-            birth_county TEXT
+            birth_uf TEXT
         )
     `
 
     await database`
-        CREATE TABLE deputy_links (
+        CREATE TABLE IF NOT EXISTS office (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            building TEXT,
+            room TEXT,
+            floor TEXT,
+            phone TEXT,
+            email TEXT,
+            deputy_id INTEGER NOT NULL,
+            CONSTRAINT fk_deputy_office FOREIGN KEY(deputy_id) REFERENCES deputy(id)
+        )
+    `
+
+    await database`
+        CREATE TABLE IF NOT EXISTS deputy_links (
             id SERIAL PRIMARY KEY,
             url TEXT NOT NULL,
             type TEXT NOT NULL,
@@ -34,23 +48,22 @@ export const prepareDB = async function() {
     `
 
     await database`
-        CREATE TABLE expenses (
+        CREATE TABLE IF NOT EXISTS expense (
             id SERIAL PRIMARY KEY,
             difid TEXT UNIQUE NOT NULL,
             name_parlamentarian TEXT,
-            cpf TEXT,
-            wallet INTEGER,
-            party TEXT,
+            wallet TEXT,
             subquota INTEGER,
+            number_specification_subquota INTEGER,
             detail_specification TEXT,
             supplier TEXT,
             identifier TEXT,
-            number INTEGER,
-            type INTEGER,
+            number TEXT,
+            type_document TEXT,
             emission_date TEXT,
-            value_document DECIMAL(10, 2),
-            value_gloss DECIMAL (10, 2),
-            liquid_value DECIMAL(10, 2),
+            value_document DECIMAL(10,2),
+            value_gloss DECIMAL(10,2),
+            liquid_value DECIMAL(10,2),
             month INTEGER,
             year INTEGER,
             parcel INTEGER,
@@ -62,11 +75,19 @@ export const prepareDB = async function() {
             refund DECIMAL(10, 2),
             document_id INTEGER,
             url_document TEXT,
-
+            insert_date TIMESTAMPTZ,
             deputy_id INTEGER NOT NULL,
-            CONSTRAINT fk_deputy_expense FOREIGN KEY(deputy_id) REFERENCES(id)
+            CONSTRAINT fk_deputy_expense FOREIGN KEY(deputy_id) REFERENCES deputy(id)
         )
-    ` // precisamos do partido (party) porque nos dados sobre os deputados... NÃO VEM O PARTIDO DO DEPUTADO. Então nós pegamos o partido daqui (:
+    `
+
+    await database`
+        CREATE INDEX IF NOT EXISTS idx_deputy_office ON office (deputy_id)
+    `
+
+    await database`
+        CREATE INDEX IF NOT EXISTS idx_expense ON expense (subquota, number_specification_subquota, identifier, month, year, document_id)
+    `
 }
 
 // CONTINUAR: ajustar banco de dados, e fazer o sistema de download dos dados.
