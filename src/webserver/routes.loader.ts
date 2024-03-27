@@ -16,7 +16,6 @@ export default async function LoadRoutes(app: FastifyInstance) {
             for(const route of metadata.default) {
                 app.route(route)
                 totalRoutes += 1
-                console.log("ola")
             }
             done()
         }, {
