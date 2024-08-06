@@ -1,0 +1,12 @@
+{
+    "senators": {
+        "concurrenct_fetches": 10,
+        "delay_between": 2000
+    },
+    "expenses": {
+        "transactions": {
+            "concurrency": 25,
+            "batch_size": 5000
+        }
+    }
+}

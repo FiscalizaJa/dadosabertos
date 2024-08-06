@@ -1,0 +1,20 @@
+{
+    "types": {
+        "1": "recibo",
+        "2": "passagem / bilhete / código localizador",
+        "3": "nota fiscal",
+        "4": "nota fiscal eletrônica",
+        "5": "fatura",
+        "6": "boleto",
+        "7": "cupom fiscal"
+    },
+    "conversions": {
+        "Recibo": 1,
+        "Passagem / Bilhete / Código Localizador": 2,
+        "Nota Fiscal": 3,
+        "Nota Fiscal Eletrônica": 4,
+        "Fatura": 5,
+        "Boleto": 6,
+        "Cupom Fiscal": 7
+    }
+}

@@ -3,6 +3,9 @@
         "alwaysStrict": true,
         "esModuleInterop": true,
         "outDir": "./dist",
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+    },
+    "ts-node": {
+        "files": true
     }
 }

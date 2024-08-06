@@ -1,0 +1,11 @@
+{
+    "update_camara_expenses": {
+        "cron_expression": "0 6 * * *"
+    },
+    "update_senado_expenses": {
+        "cron_expression": "0 7 * * *"
+    },
+    "clear_non_viewed_results": {
+        "cron_expression": "*/15 * * * *"
+    }
+}

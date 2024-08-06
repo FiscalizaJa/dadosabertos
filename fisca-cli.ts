@@ -2,22 +2,23 @@ import select, { Separator } from "@inquirer/select";
 import logger from "./src/logger";
 import dotenv from "dotenv";
 
+import db_preparer from "./src/fisca-cli/database_preparer";
+import db_updater from "./src/fisca-cli/data_updater"
+
 dotenv.config()
 
-const values = ["deputies", "senators", "all"]
-
 select({
-    message: "Qual banco de dados você quer preparar?:",
+    message: "O que você quer fazer?:",
     choices: [
         {
-            name: "Câmara dos Deputados",
-            description: "Banco de dados relacionado à câmara dos deputados",
-            value: "deputies"
+            name: "Preparar bancos de dados",
+            description: "Preparar bancos de dados dos respectivos orgãos cobertos pelo fiscalizaja.",
+            value: "prepare_db"
         },
         {
-            name: "Senado Federal",
-            description: "Banco de dados relacionado ao Senado Federal.",
-            value: "senators"
+            name: "Atualizar bancos de dados",
+            description: "Atualizar dados dos respectivos bancos de dados.",
+            value: "update_data"
         },
         {
             name: "Todos",
@@ -26,26 +27,16 @@ select({
         }
     ]
 }).then(async (answer) => {
-    logger.info("Iniciando preparacao do banco de dados...") // Por que cargas da água não funciona com caracteres utf-8 ?
-
-    prepare(answer)
+    execute(answer)
 })
 
-async function prepare(db: string) {
+async function execute(db: string) {
     switch(db) {
-        case "deputies":
-            logger.info("Preparando banco de dados: Camara dos deputados")
-            logger.warn("Se houver ja tabelas com os mesmos nomes, a operacao ira falhar")
-
-            const db = await import("./src/dadosabertos/camara/database")
-            await db.prepareDB().then(() => {
-                logger.info("Preparacao concluida.")
-                db.default.end()
-            }).catch(e => {
-                logger.error(`Nao foi possivel concluir a preparacao`)
-                logger.error(e)
-                process.exit()
-            })
+        case "prepare_db":
+            db_preparer()
         break
+        case "update_data":
+            db_updater()
+        break;
     }
 }

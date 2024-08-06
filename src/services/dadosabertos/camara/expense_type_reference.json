@@ -1,0 +1,80 @@
+{
+    "1:0": {
+        "type": "Manutenção de escritório parlamentar"
+    },
+    "2:0": {
+        "type": "Locomoção, alimentação e hospedagem"
+    },
+    "3:1": {
+        "type": "Combustível/lubrificante para veículo automotor"
+    },
+    "3:2": {
+        "type": "Combustível/lubrificante para embarcação"
+    },
+    "3:3": {
+        "type": "Combustível/lubrificante para aeronave"
+    },
+    "3:4": {
+        "type": "Combustível/lubrificante (não especificado)"
+    },
+    "4:0": {
+        "type": "Consultorias, pesquisas e trabalhos técnicos"
+    },
+    "5:0": {
+        "type": "Divulgação da atividade"
+    },
+    "6:0": {
+        "type": "Aquisição de material para escritório"
+    },
+    "7:0": {
+        "type": "Aquisição ou locação de software"
+    },
+    "8:0": {
+        "type": "Serviço de segurança prestado por empresa especializada"
+    },
+    "9:0": {
+        "type": "Reembolso de passagem aérea"
+    },
+    "10:0": {
+        "type": "Telefonia"
+    },
+    "11:0": {
+        "type": "Serviços postais"
+    },
+    "12:0": {
+        "type": "Assinatura de publicações"
+    },
+    "13:0": {
+        "type": "Alimentação do parlamentar"
+    },
+    "14:0": {
+        "type": "Hospedagem, exceto no Distrito Federal"
+    },
+    "15:0": {
+        "type": "Locação de veículos automotores/Fretamento de embarcações"
+    },
+    "119:0": {
+        "type": "Locação/fretamento de aeronaves"
+    },
+    "120:0": {
+        "type": "Locação/fretamento de veículos automotores"
+    },
+    "121:0": {
+        "type": "Locação/freamento de embarcações"
+    },
+    "122:0": {
+        "type": "Serviço de táxi, pedágio e estacionamento"
+    },
+    "123:0": {
+        "type": "Passagens terrestres, marítimas ou fluviais"
+    },
+    "137:0": {
+        "type": "Participação em curso, palestra ou evento similiar"
+    },
+    "998:0": {
+        "type": "Passagem aérea SIGEPA"
+    },
+    "999:0": {
+        "type": "Passagem aérea RPA"
+    }
+}

@@ -1,12 +1,13 @@
 import Downloader from "./downloader";
 import database from "./database";
 import axios from "axios";
-import logger from "../../logger";
-import sleep from "../../utils/sleep";
+import logger from "../../../logger";
+import sleep from "../../../utils/sleep";
 import config from "./loader.config.json";
 import { JSONParser } from "@streamparser/json-node";
-import paginate from "../../utils/paginate";
-import nullishEmptyString from "../../utils/nullishEmptyString";
+import paginate from "../../../utils/paginate";
+import nullishEmptyString from "../../../utils/nullishEmptyString";
+import checkDateValidity from "../../../utils/checkDateValidity";
 import fs from "fs";
 
 const downloader = new Downloader();
@@ -62,7 +63,7 @@ async function saveDeputies() {
                     id: data.id,
                     name: data.ultimoStatus.nome,
                     full_name: data.nomeCivil,
-                    sex: data.sexo,
+                    gender: data.sexo,
                     party: data.ultimoStatus.siglaPartido,
                     cpf: data.cpf,
                     birth_date: data.dataNascimento,
@@ -132,6 +133,7 @@ async function saveDeputies() {
     logger.info("Done with saving.")
     database.end()
 }
+
 function saveExpensesForYear(year: number) {
     return new Promise(async (resolve, reject) => {
         logger.info(`Downloading expenses for year ${year} from https://dadosabertos.camara.leg.br`)
@@ -185,6 +187,15 @@ function saveExpensesForYear(year: number) {
                         data.value.cnpjCPF = data.value.cnpjCPF.split('').filter((char: any) => !isNaN(char)).join('').replace(/ /g, '')
                     }
 
+                    if(!data.value.dataEmissao || !checkDateValidity(data.value.dataEmissao)) {
+                        // reconstrói o data emissao com base no mês e ano da despesa
+                        const date = new Date()
+                        date.setFullYear(data.value.ano)
+                        date.setMonth(data.value.mes)
+
+                        data.value.dataEmissao = date
+                    }
+
                     if(deputy_list[data.value?.numeroDeputadoID]) {
                         expenses.push({
                             difid: Object.values(data.value).join("-"),
@@ -202,7 +213,7 @@ function saveExpensesForYear(year: number) {
                             value_gloss: data.value?.valorGlosa,
                             liquid_value: data.value?.valorLiquido,
                             month: data.value?.mes,
-                            year: data.value?.year,
+                            year: data.value?.ano,
                             parcel: data.value?.parcela,
                             passenger: data.value?.passageiro,
                             section: data.value?.trecho,
@@ -227,6 +238,7 @@ function saveExpensesForYear(year: number) {
             }
     
             logger.info(`End for year ${year}`)
+
             resolve(true)
         })
     })
@@ -261,12 +273,56 @@ async function downloadExpensesStartingFromYear(startingYear: number) {
             year += 1
         }
 
+        await updatePreMadeData()
+
         resolve(true)
     })
 }
 
+async function updatePreMadeData() {
+    logger.info("Updating other tables")
+    await database`
+        INSERT INTO supplier (identifier, name)
+        SELECT DISTINCT identifier, supplier
+        FROM expense
+        WHERE identifier IS NOT NULL AND identifier <> ''
+        ON CONFLICT (name) DO NOTHING
+    `
+
+    await database`
+        WITH cte AS (
+            SELECT id, url_document,
+                ROW_NUMBER() OVER (PARTITION BY url_document ORDER BY id DESC) AS rn
+            FROM expense
+            WHERE url_document IS NOT NULL AND url_document != ''
+        )
+        DELETE FROM expense
+        WHERE id IN (SELECT id FROM cte WHERE rn > 1)
+    `
+
+    await database`
+        WITH despesas AS (
+            SELECT year, 
+            month, 
+            supplier,
+            name_parlamentarian,
+            deputy_id,
+            SUM(liquid_value) AS total
+            FROM expense
+            GROUP BY year, month, supplier, name_parlamentarian, deputy_id
+        )
+        INSERT INTO expenses_total (year, month, supplier, deputy_name, deputy_id, total)
+        SELECT year, month, supplier, name_parlamentarian, deputy_id, total FROM despesas ON CONFLICT DO NOTHING;
+    `
+    logger.info("Done.")
+}
+
+// CONTINUAR: agora que os dados foram salvos com sucesso, só falta servir eles na API e implementar o cronjob para atualizar periodicamente E NÃO exportar a função aqui. Pelo terminal deve ser feito pelo fisca-cli.
+// Possibilidade: Usar BullMQ
+
 export default {
     saveDeputies,
     saveExpensesForYear,
-    downloadExpensesStartingFromYear
+    downloadExpensesStartingFromYear,
+    updatePreMadeData
 }

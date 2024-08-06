@@ -1,0 +1,21 @@
+{
+    "conversions": {
+        "locomocao, hospedagem, alimentacao, combustiveis e lubrificantes": 1,
+        "passagens aereas, aquaticas e terrestres nacionais": 2,
+        "aluguel de imoveis para escritorio politico, compreendendo despesas concernentes a eles.": 3,
+        "aquisicao de material de consumo para uso no escritorio politico, inclusive aquisicao ou locacao de software, despesas postais, aquisicao de publicacoes, locacao de moveis e de equipamentos.": 4,
+        "contratacao de consultorias, assessorias, pesquisas, trabalhos tecnicos e outros servicos de apoio ao exercicio do mandato parlamentar": 5,
+        "divulgacao da atividade parlamentar": 6,
+        "servicos de seguranca privada": 7
+    },
+    "types": {
+        "1": "Lomoção, hospedagem, alimentação, combustíveis e lubrificantes",
+        "2": "Passagens áereas, aquáticas e terrestres",
+        "3": "Aluguel de imóveis para escritório de apoio a atividade parlamentar",
+        "4": "Aquisição de materiais, softwares, publicações ou despesas postais para escritório de apoio a atividade parlamentar",
+        "5": "Consultorias, pesquisas e trabalhos técnicos",
+        "6": "Divulgação da atividade parlamentar",
+        "7": "Serviços de segurança prestado por empresa especializada",
+        "-1": "Tipo de despesa não documentado pelo Senado Federal"
+    } 
+}
