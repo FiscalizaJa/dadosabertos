@@ -10,7 +10,10 @@ import nullishEmptyString from "../../../utils/nullishEmptyString";
 import checkDateValidity from "../../../utils/checkDateValidity";
 import fs from "fs";
 
+import WikipediaArticlesList from "./Wikipedia";
+
 const downloader = new Downloader();
+const wikipediaArticles = new WikipediaArticlesList()
 
 const CONCURRENT_DEPUTIES_FETCHES = config.deputies.concurrenct_fetches
 const DELAY_BETWEEN_FETCHES = config.deputies.delay_between
@@ -43,6 +46,7 @@ async function fetchDeputy(id: number) {
 async function saveDeputies() {
     logger.info("Fetching deputies from https://dadosabertos.camara.leg.br")
 
+    const wikiLinks = await wikipediaArticles.mountArticlesList()
     const deputies_request = await fetchDeputies()
     const deputies = deputies_request.dados
 
@@ -89,6 +93,14 @@ async function saveDeputies() {
     }
 
     const deputies_data = detailed_deputies.map(d => {
+        if(wikiLinks[d.name]) {
+            links.push({
+                url: wikiLinks[d.name],
+                type: "Wikipedia",
+                deputy_id: d.id
+            })
+        }
+
         offices.push({
             ...d.office,
             deputy_id: d.id
@@ -316,9 +328,6 @@ async function updatePreMadeData() {
     `
     logger.info("Done.")
 }
-
-// CONTINUAR: agora que os dados foram salvos com sucesso, só falta servir eles na API e implementar o cronjob para atualizar periodicamente E NÃO exportar a função aqui. Pelo terminal deve ser feito pelo fisca-cli.
-// Possibilidade: Usar BullMQ
 
 export default {
     saveDeputies,

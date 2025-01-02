@@ -5,7 +5,7 @@ import Queue from "../../services/full_query/queue/Queue";
 import { WebSocket } from "@fastify/websocket";
 import CamaraQueryHandler from "../../services/dadosabertos/camara/queryHandler";
 import SenadoQueryHandler from "../../services/dadosabertos/senado/queryHandler";
-import FullQueryHanlder from "../../services/full_query/queryHandler";
+import FullQueryHanlder, { HouseExpenses } from "../../services/full_query/queryHandler";
 
 const fullquery = new FullQueryHanlder();
 
@@ -86,8 +86,11 @@ async function GetQueryExpenses(req: FastifyRequest, res: FastifyReply) {
         expenses_page: number,
         suppliers_items: number,
         suppliers_page: number,
-        include_series: string[]
+        include_series: string[],
+        target: string
     }
+
+    const target = query.target.toLowerCase() === "camara" ? HouseExpenses.Camara : HouseExpenses.Senado
 
     const query_result = await fullquery.getResultById(Number(params.job), {
         expenses: {
@@ -98,7 +101,7 @@ async function GetQueryExpenses(req: FastifyRequest, res: FastifyReply) {
             items: query.suppliers_items,
             page: query.suppliers_page
         }
-    }, query.include_series || []) as any
+    }, query.include_series || [], target) as any
 
     if(!query_result) {
         return res.status(404).send({

@@ -24,6 +24,9 @@ const routes: RouteOptions[] = [
                                     items: {
                                         $ref: "senator_resume_data"
                                     }
+                                },
+                                metadata: {
+                                    $ref: "all_parlamentarians_metadata"
                                 }
                             }
                         }
@@ -111,6 +114,52 @@ const routes: RouteOptions[] = [
                             schema: {
                                 data: {
                                     $ref: "senator_expenses_data"
+                                },
+                                metadata: {
+                                    $ref: "all_parlamentarians_metadata"
+                                }
+                            }
+                        }
+                    },  
+                },
+                400: {
+                    type: "object",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                error: {
+                                    type: "string"
+                                },
+                                code: {
+                                    type: "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    {
+        method: "GET",
+        url: "/senado/spendranking",
+        handler: SenatorsController.SpendRanking,
+        schema: {
+            description: "Retorna um ranking para cada ano selecionado, com os Senadores que mais gastaram.",
+            summary: "Ranking de Senadores que mais gastaram em um período.",
+            tags: ["Senado Federal"],
+            querystring: {
+                $ref: "senado_suppliers_ranking_querystring"
+            },
+            response: {
+                200: {
+                    type: "object",
+                    content: {
+                        "application/json": {
+                            default: true,
+                            schema: {
+                                data: {
+                                    $ref: "senators_spendrank_data"
                                 }
                             }
                         }

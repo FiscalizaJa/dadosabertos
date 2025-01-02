@@ -25,6 +25,29 @@ const schema = {
             enum: ["asc", "desc"],
             default: "asc",
             description: "Ordem dos resultados."
+        },
+        id: {
+            type: "array",
+            maxItems: 512,
+            items: {
+                type: "number",
+                description: "IDs dos deputados a serem enviados (envia todos se omitido)."
+            }
+        },
+        searchTerm: {
+            type: "string",
+            description: "Termo para pesquisar os parlamentares (somente por nome ou cpf).",
+            maxLength: 100
+        },
+        birth_uf: {
+            type: "string",
+            description: "UF de nascimento dos Deputados Federais.",
+            maxLength: 100
+        },
+        party: {
+            type: "string",
+            description: "Partido dos Deputados Federais.",
+            maxLength: 100
         }
     },
 }

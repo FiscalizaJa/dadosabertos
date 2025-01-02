@@ -14,6 +14,10 @@ const schema = {
             type: "string",
             description: "Nome completo do Deputado."
         },
+        bio: {
+            type: "string",
+            description: "Biografia do Deputado. (gerado por IA)"
+        },
         gender: {
             type: "string",
             description: "Sexo do Deputado(a)."
@@ -34,6 +38,22 @@ const schema = {
             type: "string",
             description: "UF de nascimento do Deputado."
         },
+        links: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    url: {
+                        type: "string",
+                        description: "URL do link associado.",
+                    },
+                    type: {
+                        type: "string",
+                        description: "Tipo do link associado.",
+                    }
+                }
+            }
+        },
         office: {
             type: "array",
             items: {
@@ -44,7 +64,7 @@ const schema = {
                         description: "Número do gabinete."
                     },
                     building: {
-                        type: "number",
+                        type: "string",
                         description: "Número do prédio onde se localiza o gabinete."
                     },
                     room: {

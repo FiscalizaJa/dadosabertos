@@ -4,7 +4,11 @@ const ParlamentarianListQuerystringSchema = z.object({
     itens: z.number().max(100),
     page: z.number().min(1),
     orderby: z.string(),
-    order: z.string()
+    order: z.string(),
+    id: z.array(z.number().int().optional()),
+    searchTerm: z.string().max(100),
+    birth_uf: z.string().max(5),
+    party: z.string().max(100)
 })
 
 type ParlamentarianListQuerystring = z.infer<typeof ParlamentarianListQuerystringSchema>

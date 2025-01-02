@@ -6,9 +6,16 @@ import type { ExpensesSuppliersFilters } from "../../../interfaces/ExpensesSuppl
 import type { ExpensesResumeFilter } from "../../../interfaces/ExpensesResumeFilter";
 import type { SuppliersTotals } from "../../../interfaces/SuppliersTotals";
 import { FullQuery } from "../../../interfaces/FullQuery";
-import buildRankObject from "../../../utils/buildRankObject";
+import MeiliClient from "../../meilisearch/MeiliSearch";
 
 import crypto from "crypto";
+import { SearchParlamentarian } from "../../../interfaces/SearchParlametarian";
+import { SearchSupplier } from "../../../interfaces/SearchSupplier";
+import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
+import wikipedia from "wikipedia";
+import ConvertSpacesToUnderscores from "../../../utils/ConvertSpacesToUnderscore";
+
+wikipedia.setLang("pt")
 
 /**
  * Query handler is a class that own all functions to write queries in database
@@ -42,22 +49,103 @@ class QueryHandler {
         })
     }
 
+    getAllDeputiesWithoutFiltersGenerator(batchSize: number) {
+        const data = database`
+            SELECT *
+            FROM deputy
+        `.cursor(batchSize)
+
+        return data
+    }
+
+    getExpensesByHitId(hitId: string, page: number, itens: number) {
+        return new Promise(async (resolve, reject) => {
+            const OFFSET = itens * (page - 1)
+            const data = await database`
+                WITH hits AS (
+                    SELECT
+                        UNNEST(hits) as hit
+                    FROM expenses_query_hits
+                    WHERE
+                        id = ${hitId}
+                    LIMIT ${itens} ${page > 1 ? database`OFFSET ${OFFSET}` : database``}
+                )
+                SELECT *
+                FROM
+                    expense
+                WHERE
+                    id in (SELECT hit FROM hits)
+            `.catch(e => {
+                reject(e)
+                return null
+            })
+
+            if(data) {
+                resolve(data)
+            }
+        })
+    }
+
+    getParties() {
+        return new Promise(async (resolve, reject) => {
+            const data = await database`
+                SELECT
+                    ARRAY_AGG(DISTINCT party) as parties
+                FROM deputy
+            `.catch(e => reject(e))
+        
+            resolve(data[0].parties)
+        })
+    }
+
     getDeputies(filter: ParlamentarianListQuerystring = { itens: QueryHandler.MAX_DEPUTIES, orderby: "name", order: "asc", page: 1}) {
         return new Promise(async (resolve, reject) => {
             filter.itens = Math.min(filter.itens || QueryHandler.MAX_DEPUTIES, QueryHandler.MAX_DEPUTIES)
             
-            const offset = (filter.page) * filter.itens
+            const offset = (filter.page - 1) * filter.itens
 
-            const data = await database`
-                SELECT * FROM deputy
-                ORDER BY ${database(filter.orderby)} ${filter.order === "desc" ? database`desc` : database`asc`}
-                LIMIT ${filter.itens}
-                ${filter.page > 1 ? database`OFFSET ${offset}` : database``}
-            `.catch((error) => {
-                reject(error)
+            if(filter.searchTerm && !filter.id?.length) {
+                const index = MeiliClient.index("deputies")
+                const data = await index.search<SearchParlamentarian>(filter.searchTerm)
+
+                const ids = data.hits.map(hit => hit.id)
+                
+                filter.id = ids
+
+                if(!ids.length) {
+                    return resolve([])
+                }
+            }
+
+            const queries = await Promise.all([
+                database`
+                    SELECT
+                        *
+                    FROM deputy
+                        ${filter.id ? database`WHERE id IN ${database(filter.id)}` : database``}
+                        ${filter.birth_uf ? database`${filter.id ? database.unsafe(`AND`) : database`WHERE`} birth_uf = ${filter.birth_uf}` : database``}
+                        ${filter.party ? database`${filter.birth_uf ? database.unsafe(`AND`) : database`WHERE`} party = ${filter.party}` : database``}
+                    ORDER BY ${database(filter.orderby)} ${filter.order === "desc" ? database`desc` : database`asc`}
+                    LIMIT ${filter.itens}
+                    ${filter.page > 1 ? database`OFFSET ${offset}` : database``}
+                `,
+                database`
+                    SELECT
+                        COUNT(*) AS items
+                    FROM deputy
+                        ${filter.id ? database`WHERE id IN ${database(filter.id)}` : database``}
+                        ${filter.birth_uf ? database`${filter.id ? database.unsafe(`AND`) : database`WHERE`} birth_uf = ${filter.birth_uf}` : database``}
+                        ${filter.party ? database`${filter.birth_uf ? database.unsafe(`AND`) : database`WHERE`} party = ${filter.party}` : database``}
+                `
+            ])
+
+            const data = queries[0]
+            const metadata = queries[1]
+
+            resolve({
+                data,
+                metadata: metadata[0]
             })
-
-            resolve(data)
         })
     }
 
@@ -90,6 +178,72 @@ class QueryHandler {
         })
     }
 
+    getDeputyBio(id: number, deputy_data?: any): Promise<string> {
+        return new Promise(async (resolve, reject) => {
+            const deputy = deputy_data || await this.getDeputy(id) as any
+
+            if(!deputy) {
+                return reject("Deputy not found")
+            }
+
+            const ChatProvider = await import("../../AI/ChatProvider");
+            const chatProvider = new ChatProvider.default(ChatProvider.Provider.Gemini)
+
+            let bio = deputy.bio
+
+            const model = await chatProvider.client.createRawModel({
+                model: "gemini-1.5-pro",
+                systemInstruction: `
+                    Resuma este artigo sobre o parlamentar e destaque pontos principais como os temas em que atua, seu trajeto e qualificações. Não mencione situações controvérsias ou polêmicas ao qual o mesmo tenha se envolvido. Mantenha-se imparcial.
+                    O texto deve ser compacto e direto, então tente manter algo próximo de 3 linhas.
+                    Caso o conteúdo dê muito peso para controvérsias e polêmicas, dificultando um resumo imparcial, deixe "[biased_content]" no final.
+                `,
+                safetySettings: [
+                    {
+                        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                        threshold: HarmBlockThreshold.BLOCK_NONE
+                    },
+                    {
+                        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                        threshold: HarmBlockThreshold.BLOCK_NONE
+                    }
+                ]
+            })
+
+            const selectedArticle = deputy.links.find(l => l.type === "Wikipedia")?.url
+
+            if(!selectedArticle) {
+                bio = "[none]"
+            }
+
+            const page = await wikipedia.page(selectedArticle).catch(e => null)
+
+            if(!page) {
+                bio = "[none]"
+            }
+
+            if(bio !== "[none]" && bio !== "[wrong_article]") {
+                const summary = await page.content({ fields: ["content"] })
+                const AISummary = await model.generateContent(summary).catch(e => null)
+
+                if(!AISummary) {
+                    bio = "[none]"
+                } else {
+                    bio = AISummary?.response?.text()
+                    if(bio) {
+                        bio += " [ai_generated]"
+                    }
+                }
+            }
+            
+            await database`
+                UPDATE deputy SET bio = ${bio} WHERE id = ${id}
+            `
+        
+            resolve(bio)
+        })
+    }
+
     getDeputyExpenses(id: number, filter: ExpensesFilters) {
         return new Promise(async (resolve, reject) => {
             const date = new Date()
@@ -100,19 +254,33 @@ class QueryHandler {
 
             const offset = (filter.page * filter.itens) - 1
 
-            const data = await database`
-                SELECT ${database(QueryHandler.EXPENSE_KEYS)}
-                FROM expense 
-                WHERE 
-                    deputy_id = ${id} 
-                    AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
-                LIMIT ${filter.itens}
-                ${filter.page > 1 ? database`OFFSET ${offset}` : database``}
-            `.catch(e => {
+            const queries = await Promise.all([
+                database`
+                    SELECT ${database(QueryHandler.EXPENSE_KEYS)}
+                    FROM expense 
+                    WHERE 
+                        deputy_id = ${id} 
+                        AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
+                    LIMIT ${filter.itens}
+                    ${filter.page > 1 ? database`OFFSET ${offset}` : database``}
+                `,
+                database`
+                    SELECT
+                        COUNT(*) AS items
+                    FROM expense 
+                    WHERE 
+                        deputy_id = ${id} 
+                        AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
+                    LIMIT ${filter.itens}
+                `
+            ]).catch(e => {
                 reject(e)
             })
 
-            resolve(data)
+            resolve({
+                data: queries[0],
+                metadata: queries[1][0]
+            })
         })
     }
 
@@ -283,9 +451,19 @@ class QueryHandler {
         })
     }
 
+    getAllSuppliersWithoutFiltersGenerator(batchSize: number) {
+        const data = database`
+            SELECT *
+            FROM supplier
+        `.cursor(batchSize)
+
+        return data
+    }
+
     searchSupplier(query: string) {
         return new Promise(async (resolve, reject) => {
-            const data = await database`
+            // LEGACY SEARCH
+            /*const data = await database`
                 SELECT 
                     MAX(identifier) AS identifier,
                     ARRAY_AGG(name) AS names
@@ -293,7 +471,107 @@ class QueryHandler {
                 WHERE name_vector @@ plainto_tsquery('portuguese', ${query})
                 GROUP BY identifier
                 LIMIT 15
+            `*/
+
+            const index = MeiliClient.index("camara_suppliers")
+            const preparedData: { identifier: string, names: string[] }[] = []
+            const data = await index.search<SearchSupplier>(query)
+
+            const identifiersToName: Record<string, string[]> = {}
+
+            for(const hit of data.hits) {
+                if(!identifiersToName[hit.identifier]) {
+                    identifiersToName[hit.identifier] = []
+                }
+
+                identifiersToName[hit.identifier].push(hit.name)
+            }
+
+            const identifiers = Object.keys(identifiersToName)
+            
+            for(const identifier of identifiers) {
+                preparedData.push({
+                    identifier: identifier,
+                    names: identifiersToName[identifier]
+                })
+            }
+
+            resolve(preparedData.slice(0, 15))
+        })
+    }
+
+    spendRanking(filter: ExpensesResumeFilter) {
+        return new Promise(async (resolve, reject) => {
+            const date = new Date()
+
+            filter.year = filter.year || [date.getFullYear()]
+            filter.month = filter.month || [(date.getMonth() + 1)]
+
+            const data = await database`
+                WITH ranked_expenses AS (
+                    SELECT
+                        year,
+                        month,
+                        total,
+                        deputy_name,
+                        deputy_id
+                    FROM expenses_total
+                    WHERE
+                        month IN ${database(filter.month)}
+                        AND year IN ${database(filter.year)}
+                )
+                SELECT
+                    year,
+                    ARRAY_AGG(DISTINCT month) as months,
+                    SUM(total) AS total,
+                    deputy_name,
+                    deputy_id
+                FROM ranked_expenses
+                GROUP BY year, deputy_name, deputy_id
+                ORDER BY total DESC;
             `
+
+            const ids = data.map(d => d.deputy_id)
+
+            const per_category = await database`
+                SELECT
+                    deputy_id,
+                    year,
+                    JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'subquota', subquota,
+                            'number_specification_subquota', number_specification_subquota,
+                            'total', total
+                        )
+                    ) AS totals
+                FROM (
+                    SELECT
+                        deputy_id,
+                        year,
+                        subquota,
+                        number_specification_subquota,
+                        SUM(liquid_value) AS total
+                    FROM expense
+                    WHERE
+                        month IN ${database(filter.month)}
+                        AND year IN ${database(filter.year)}
+                        AND deputy_id IN ${database(ids)}
+                    GROUP BY deputy_id, year, subquota, number_specification_subquota
+                ) AS grouped_expenses
+                GROUP BY deputy_id, year;
+            `
+
+            const spend_per_category: Record<string, any> = {}
+
+            for(const spend of per_category) {
+                spend_per_category[`${spend.deputy_id}-${spend.year}`] = spend.totals
+            }
+
+            for(const index in data) {
+                const value = data[index]
+
+                data[index].per_category = spend_per_category[`${value.deputy_id}-${value.year}`]
+            }
 
             resolve(data)
         })
@@ -324,11 +602,14 @@ class QueryHandler {
                 }
             }).filter(q => q !== undefined)
             
-            const data = await database`
-                SELECT * 
-                FROM expense
-                WHERE
-                    ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
+            const hitsId = crypto.randomBytes(16).toString("hex")
+            
+            const d = await database`
+                INSERT INTO expenses_query_hits (id, hits)
+                VALUES (
+                    ${hitsId}, 
+                    (SELECT ARRAY(SELECT id FROM expense WHERE ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)} ))
+                );
             `.catch(e => {
                 console.error(e)
                 return {
@@ -432,11 +713,44 @@ class QueryHandler {
             }
             
             resolve({
-                expenses: data,
+                expenses: hitsId,
                 suppliers: suppliers_ranking,
                 insights: insights[0] || {},
                 yearly_series: yearly_series
             })
+        })
+    }
+
+    getYearlySeriesFromHitId(hitId: string) {
+        return new Promise(async (resolve, reject) => {
+            const data = await database`
+                WITH hits AS (
+                    SELECT
+                        UNNEST(hits) as hit
+                    FROM expenses_query_hits
+                    WHERE
+                        id = ${hitId}
+                )
+                SELECT
+                    year,
+                    SUM(liquid_value) AS total,
+                    AVERAGE(liquid_value) AS average
+                FROM
+                    expense
+                WHERE
+                    id IN (select hit from hits)
+                GROUP BY year
+                ORDER BY year DESC
+            `.catch(e => {
+                reject(e)
+                return null
+            })
+
+            if(!data) {
+                return
+            }
+
+            resolve(data)
         })
     }
 }

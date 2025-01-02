@@ -14,9 +14,10 @@ declare module "fastify" {
     }
 }
 
-type callback = () => void
+type callback = (...args: unknown[]) => void
 declare global {
     var jobs_callback: { [key: string]: callback[] }
+    var gpt_callback: { [key: string]: callback[] }
 }
 
 export default undefined

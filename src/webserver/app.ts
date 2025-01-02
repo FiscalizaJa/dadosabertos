@@ -8,9 +8,11 @@ import LoadSchemas from "./schemas.loader";
 import update_camara_expenses from "../services/cronjobs/update_camara_expenses";
 import update_senado_expenses from "../services/cronjobs/update_senado_expenses";
 import clear_non_viewed_results from "../services/cronjobs/clear_non_viewed_results";
+import sync_meili_with_database from "../services/cronjobs/sync_meili_with_database";
+import { Http2Server } from "http2";
 
 async function wrap(listen: boolean = true) {
-    const app = fastify()
+    const app = fastify({ maxParamLength: 660 }) // TODO: support for TLS.
 
     const plugins_data = await LoadPlugins(app)
     logger.info(`Loaded ${plugins_data.pluginsLoaded} plugins`)
@@ -25,6 +27,7 @@ async function wrap(listen: boolean = true) {
         update_camara_expenses.start()
         update_senado_expenses.start()
         clear_non_viewed_results.start()
+        sync_meili_with_database.start()
 
         global.jobs_callback = {}
 

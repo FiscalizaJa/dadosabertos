@@ -17,5 +17,67 @@
         "6": "Divulgação da atividade parlamentar",
         "7": "Serviços de segurança prestado por empresa especializada",
         "-1": "Tipo de despesa não documentado pelo Senado Federal"
-    } 
+    },
+    "schema": {
+        "id": {
+            "type": "number",
+            "description": "ID da despesa, unicamente identificada no banco de dados."
+        },
+        "year": {
+            "type": "number",
+            "description": "Ano de ocorrência da despesa."
+        },
+        "month": {
+            "type": "number",
+            "description": "Mês de ocorrência da despesa."
+        },
+        "name_parlamentarian": {
+            "type": "string",
+            "description": "Nome do senador autor da despesa."
+        },
+        "document_id": {
+            "type": "string",
+            "description": "ID do documento da despesa"
+        },
+        "type_document": {
+            "type": "number",
+            "description": "Tipo do documento da despesa, se presente."
+        },
+        "subquota": {
+            "type": "number",
+            "description": "Identificador numérico da categoria da despesa."
+        },
+        "detail_specification": {
+            "type": "string",
+            "description": "Detalhes sobre o gasto, normalmente fornecido pelo Senador."
+        },
+        "supplier": {
+            "type": "string",
+            "description": "Nome do fornecedor da despesa."
+        },
+        "identifier": {
+            "type": "string",
+            "description": "CPF ou CNPJ do fornecedor da despesa."
+        },
+        "emission_date": {
+            "type": "string",
+            "description": "Data de emissão do comprovante ou postagem no sistema do Senado."
+        },
+        "liquid_value": {
+            "type": "string",
+            "description": "Valor líquido da despesa."
+        },
+        "insert_date": {
+            "type": "string",
+            "description": "Data em que foi inserido no banco de dados."
+        },
+        "senator_id": {
+            "type": "number",
+            "description": "ID do Senador autor da despesa."
+        },
+        "_type": {
+            "type": "string",
+            "description": "String com a categoria da despesa por extenso, disponível apenas para o FiscalizaBot."
+        }
+    }      
 }

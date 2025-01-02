@@ -17,14 +17,13 @@ export const prepareDB = async function() {
             made_at TIMESTAMPTZ NOT NULL,
             last_view TIMESTAMPTZ NOT NULL,
             author_id TEXT NOT NULL,
-            expenses JSONB,
+            expenses TEXT UNIQUE,
             insights JSONB,
             suppliers JSONB
         )
     `
 
     await database`
-        CREATE INDEX IF NOT EXISTS idx_expenses ON query_result USING GIN (expenses);
         CREATE INDEX IF NOT EXISTS idx_suppliers ON query_result USING GIN (suppliers);
     `.simple()
 }

@@ -3,16 +3,32 @@ import LoginController from "../controllers/AuthController";
 
 const routes: RouteOptions[] = [
     {
-        method: "GET",
-        url: "/login/google/callback",
-        handler: LoginController.LoginWithGoogle,
+        method: "POST",
+        url: "/auth/register",
+        handler: LoginController.Register,
         schema: {
             hide: true
         }
     },
     {
         method: "GET",
-        url: "/profile",
+        url: "/auth/activate/:ac_token",
+        handler: LoginController.ActivateAccount,
+        schema: {
+            hide: true
+        }
+    },
+    {
+        method: "POST",
+        url: "/auth/login",
+        handler: LoginController.Login,
+        schema: {
+            hide: true
+        }
+    },
+    {
+        method: "GET",
+        url: "/auth/profile",
         handler: LoginController.SessionUserinfo,
         config: {
             useGuard: true

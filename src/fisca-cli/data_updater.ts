@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import camara_loader from "../services/dadosabertos/camara/loader";
 import senado_loader from "../services/dadosabertos/senado/loader";
+import { syncAll } from "../services/meilisearch/loader";
 
 dotenv.config()
 
@@ -22,6 +23,11 @@ export default function execute() {
                 name: "Senado Federal",
                 description: "Banco de dados relacionado ao Senado Federal.",
                 value: "senators"
+            },
+            {
+                name: "Motor de pesquisa",
+                description: "Sincronizar os dados do motor de pesquisa com todos os bancos de dados.",
+                value: "search"
             }
         ]
     }).then(async (answer) => {
@@ -67,6 +73,10 @@ export default function execute() {
                 }).then((answer) => {
                     second_quest(answer)
                 })
+            break
+            case "search":
+                await syncAll()
+                process.exit()
             break
         }
     }

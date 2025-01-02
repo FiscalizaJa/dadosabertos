@@ -22,11 +22,11 @@ const schema = {
                         type: "number",
                         description: "Total gasto pelo deputado em contratações do fornecedor."
                     },
-                    deputy_name: {
+                    parlamentarian_name: {
                         type: "string",
                         description: "Nome do Deputado."
                     },
-                    deputy_id: {
+                    parlamentarian_id: {
                         type: "string",
                         description: "ID do Deputado."
                     }

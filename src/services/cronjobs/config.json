@@ -7,5 +7,8 @@
     },
     "clear_non_viewed_results": {
         "cron_expression": "*/15 * * * *"
+    },
+    "sync_meili_with_database": {
+        "cron_expression": "10 7 * * *"
     }
 }

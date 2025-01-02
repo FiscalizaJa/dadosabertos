@@ -1,0 +1,9 @@
+{
+    "parlamentarians": {
+        "batchSize": 512
+    },
+    "suppliers": {
+        "batchSize": 1024,
+        "concurrent_requests": 10
+    }
+}

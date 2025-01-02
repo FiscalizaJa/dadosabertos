@@ -8,8 +8,10 @@ import alternate_types from "./alternate_type_reference.json";
 import document_types from "./document_type_reference.json";
 import expense_types from "./expense_type_reference.json";
 import removeAccent from "../../../utils/removeAccent";
+import WikipediaArticlesList from "./Wikipedia";
 
 const downloader = new Downloader()
+const wikipediArticles = new WikipediaArticlesList()
 
 const CONCURRENT_SENATORS_FETCHES = config.senators.concurrenct_fetches
 const DELAY_BETWEEN_FETCHES = config.senators.delay_between
@@ -18,6 +20,8 @@ const CONCURRENT_EXPENSES_TRANSACTIONS = config.expenses.transactions.concurrenc
 const EXPENSES_TRANSACTIONS_BATCH_SIZE = config.expenses.transactions.batch_size
 
 async function save_senators() {
+    const wikiLinks = await wikipediArticles.mountArticlesList()
+
     const senators_online_data = await downloader.agent.get(`https://legis.senado.leg.br/dadosabertos/arquivos/ListaParlamentarEmExercicio.json`)
     const senators_id = {}
 
@@ -49,6 +53,7 @@ async function save_senators() {
 
     const senators_data = [] // os dados convertidos serão salvos aqui, Senado,  seria bom se disponibilizassem um arquivo com todas as infos de senadores para download, e que não fossem incompletas igual o da câmara dos deputados que não serve pra nada.
     const offices = []
+    const links = []
 
     let promises = []
 
@@ -83,6 +88,16 @@ async function save_senators() {
                     email: online_data.IdentificacaoParlamentar.EmailParlamentar,
                     senator_id: data.IdentificacaoParlamentar.CodigoParlamentar
                 })
+
+                if(wikiLinks[data.IdentificacaoParlamentar.NomeParlamentar]) {
+                    links.push({
+                        url: wikiLinks[data.IdentificacaoParlamentar.NomeParlamentar],
+                        type: "Wikipedia",
+                        senator_id: data.IdentificacaoParlamentar.CodigoParlamentar
+                    })
+                }
+
+
             }
 
             promises = []
@@ -99,6 +114,9 @@ async function save_senators() {
     `
     await database`
         INSERT INTO office ${database(offices)}
+    `
+    await database`
+        INSERT INTO senator_links ${database(links)}
     `
     logger.info("End")
 }
@@ -141,7 +159,7 @@ async function saveExpensesForYear(year: number) {
                 subquota: expense_types.conversions[removeAccent(plain_expense.tipoDespesa?.toLowerCase()?.trim() || "")] || -1,
                 detail_specification: plain_expense.detalhamento,
                 supplier: plain_expense.fornecedor,
-                identifier: plain_expense.cpfCnpj,
+                identifier: plain_expense.cpfCnpj.split('').filter((char: any) => !isNaN(char)).join('').replace(/ /g, ''),
                 emission_date: plain_expense.data,
                 liquid_value: plain_expense.valorReembolsado,
                 insert_date: new Date(),

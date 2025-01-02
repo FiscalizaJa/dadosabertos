@@ -16,6 +16,7 @@ export const prepareDB = async function() {
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             full_name TEXT NOT NULL,
+            bio TEXT,
             gender VARCHAR(2) NOT NULL,
             party TEXT,
             cpf TEXT,
@@ -103,6 +104,13 @@ export const prepareDB = async function() {
             CONSTRAINT idx_expenses_totals_unique UNIQUE (year, month, supplier, deputy_name, deputy_id, total)
         )
     ` // sem necessidade de uma relação, são valores gerados automaticamente por uma query sql.
+
+    await database`
+        CREATE TABLE IF NOT EXISTS expenses_query_hits (
+            id TEXT PRIMARY KEY,
+            hits INTEGER[]
+        )
+    `
 
     await database`
         CREATE INDEX IF NOT EXISTS idx_deputy_office ON office (deputy_id)

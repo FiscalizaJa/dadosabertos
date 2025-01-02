@@ -14,6 +14,10 @@ const schema = {
             type: "string",
             description: "Nome completo do Senador."
         },
+        bio: {
+            type: "string",
+            description: "Biografia do Deputado. (gerado por IA)"
+        },
         gender: {
             type: "string",
             description: "Sexo do Senador(a)."
@@ -45,6 +49,22 @@ const schema = {
         acting: {
             type: "boolean",
             description: "Indica se o Senador está em exercício."
+        },
+        links: {
+            type: "array",
+            items: {
+                type: "object",
+                properties: {
+                    url: {
+                        type: "string",
+                        description: "URL do link associado.",
+                    },
+                    type: {
+                        type: "string",
+                        description: "Tipo do link associado.",
+                    }
+                }
+            }
         },
         office: {
             type: "array",

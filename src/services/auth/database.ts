@@ -11,26 +11,26 @@ const database = postgres(process.env.AUTH_DATABASE_URL!, {
 
 export const prepareDB = async function() {
     await database`
-        CREATE TABLE IF NOT EXISTS profile (
-            id TEXT PRIMARY KEY,
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
-            avatar_url TEXT,
-            activated BOOLEAN NOT NULL,
-            refresh_token TEXT NOT NULL
-        )
-    ` // refresh_token só é retornado no primeiro login do usuário na aplicação, por isso, ele deve ficar guardado de forma persistente
-    await database`
-        CREATE TABLE IF NOT EXISTS session (
-            id SERIAL PRIMARY KEY,
-            access_token TEXT UNIQUE NOT NULL,
-            mask_token TEXT UNIQUE NOT NULL,
-            expires_at TIMESTAMPTZ NOT NULL,
-
-            user_id TEXT NOT NULL,
-            CONSTRAINT fk_user_session FOREIGN KEY(user_id) REFERENCES profile(id)
+            password TEXT NOT NULL,
+            activated BOOLEAN DEFAULT false,
+            activation_token TEXT
         )
     `
+
+    /*await database`
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id SERIAL PRIMARY KEY,
+            user_id TEXT,
+            parlamentarian_id TEXT,
+            history JSONB,
+
+            CONSTRAINT idx_chat_history UNIQUE(user_id, parlamentarian_id)
+        )
+    `*/
 }
 
 export default database

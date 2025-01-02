@@ -1,7 +1,7 @@
 import { RouteOptions } from "fastify";
 import QuestionsController from "../controllers/QuestionsController";
 
-const routes: RouteOptions[] = [
+/*const routes: RouteOptions[] = [
     {
         method: "POST",
         url: "/questions",
@@ -144,6 +144,9 @@ const routes: RouteOptions[] = [
             }
         }
     }
-]
+]*/
+// Por enquanto inviavel
+
+const routes = []
 
 export default routes

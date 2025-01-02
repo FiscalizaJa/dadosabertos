@@ -35,6 +35,10 @@ export const options: SwaggerOptions = {
                 description: "Full query é um serviço do FiscalizaJá que permite que usuários façam consultas personalizadas direto no banco de dados com as despesas salvas pelo FiscalizaJá. Com isso você pode obter informações normalmente achadas somente em matérias de jornais."
             },
             {
+                name: "FiscalizaBot",
+                description: "FiscalizaBot utiliza tecnologia de inteligência artificial para tirar dúvidas sobre os gastos de parlamentares com a cota parlamentar."
+            },
+            {
                 name: "Referências",
                 description: "Referências dos campos numéricos presente nos dados, detalhando o que cada número significa."
             }

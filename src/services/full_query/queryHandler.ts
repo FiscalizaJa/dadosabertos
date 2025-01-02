@@ -1,4 +1,16 @@
 import sql from "./database";
+import CamaraQueryHandler from "../dadosabertos/camara/queryHandler";
+import SenadoQueryHandler from "../dadosabertos/senado/queryHandler";
+
+import crypto from "crypto";
+
+const camara = new CamaraQueryHandler()
+const senado = new SenadoQueryHandler()
+
+enum HouseExpenses {
+    Camara = 1,
+    Senado
+}
 
 class QueryHandler {
     static CHART_LIST = ["yearly"]
@@ -86,16 +98,42 @@ class QueryHandler {
                 page: number
             }
         },
-        charts: string[] = []
+        charts: string[] = [],
+        house: HouseExpenses
     ) {
         return new Promise(async (resolve, reject) => {
             const expenses_items = Math.min((pagination.expenses.items || 1000), 1000)
-            const expenses_offset = pagination.expenses.items * (pagination.expenses.page - 1)
             const expenses_page = pagination.expenses.page
 
             const suppliers_items = Math.min((pagination.suppliers.items || 1000), 1000)
             const suppliers_offset = pagination.suppliers.items * (pagination.suppliers.page - 1)
             const suppliers_page = pagination.suppliers.page
+
+            const query_metadata = await sql<{ expenses: number[] }[]>`
+                SELECT
+                    expenses,
+                    target
+                FROM query_result
+                WHERE
+                    id = ${id}
+            `.catch(e => {
+                reject(e)
+                return null
+            })
+
+            if(!query_metadata) {
+                return;
+            }
+
+            let expenses_json = []
+            switch(query_metadata[0].target) {
+                case "camara":
+                    expenses_json = await camara.getExpensesByHitId(query_metadata[0].expenses, expenses_page, expenses_items) as any[]
+                case "senado":
+                    expenses_json = await senado.getExpensesByHitId(query_metadata[0].expenses, expenses_page, expenses_items) as any[]
+            }
+
+            //const expenses_json = house === HouseExpenses.Camara ? await camara.getExpensesByIds(ids, expenses_page, expenses_items) : senado.getExpensesByIds(ids, expenses_page, expenses_items)
 
             const data = await sql`
                 WITH info AS (
@@ -107,21 +145,6 @@ class QueryHandler {
                     FROM query_result
                     WHERE
                         id = ${id}
-                ),
-                expenses_json AS (
-                    SELECT
-                        id,
-                        jsonb_agg(expenses) AS expenses
-                    FROM (
-                        SELECT
-                            id,
-                            JSONB_ARRAY_ELEMENTS(expenses) AS expenses
-                        FROM query_result
-                        WHERE 
-                            id = ${id}
-                        LIMIT ${expenses_items} ${expenses_page > 1 ? sql`OFFSET ${expenses_offset}` : sql``}
-                    ) subquery
-                    GROUP BY id
                 ),
                 suppliers_json AS (
                     SELECT
@@ -151,12 +174,10 @@ class QueryHandler {
                     info.target,
                     info.made_at,
                     info.author_id,
-                    expenses_json.expenses,
                     suppliers_json.suppliers,
                     insights_json.insights
                 FROM
                     info
-                    LEFT JOIN expenses_json ON info.id = expenses_json.id
                     LEFT JOIN suppliers_json ON info.id = suppliers_json.id
                     LEFT JOIN insights_json ON info.id = insights_json.id
             `.catch(e => {
@@ -164,33 +185,14 @@ class QueryHandler {
                 return {}
             })
 
+            if(data[0]) {
+                data[0].expenses = expenses_json
+            }
+
             const series = {}
 
             if(charts.includes("yearly")) {
-                const data = await sql`
-                    SELECT
-                        JSONB_AGG(yearly_totals.obj) AS yearly_total
-                    FROM (
-                        SELECT
-                            JSONB_BUILD_OBJECT(
-                                'year', json_element->>'year',
-                                'total', SUM((json_element->>'liquid_value')::DECIMAL(10, 2)),
-                                'average', AVG((json_element->>'liquid_value')::DECIMAL(10, 2))
-                            ) AS obj
-                        FROM (
-                            SELECT
-                                JSONB_ARRAY_ELEMENTS(expenses) AS json_element
-                            FROM query_result
-                            WHERE
-                                id = ${id}
-                        ) AS expanded_json_elements
-                        GROUP BY json_element->>'year'
-                        ORDER BY json_element->>'year' DESC
-                    ) AS yearly_totals
-                `.catch(e => {
-                    reject(e)
-                    return []
-                })
+                const data = query_metadata[0].target === "camara" ? await camara.getYearlySeriesFromHitId(query_metadata[0].expenses) : await senado.getYearlySeriesFromHitId(query_metadata[0].expenses)
 
                 Object.defineProperty(series, "yearly", {
                     value: data[0]?.yearly_total || null,
@@ -206,3 +208,6 @@ class QueryHandler {
 }
 
 export default QueryHandler
+export {
+    HouseExpenses
+}

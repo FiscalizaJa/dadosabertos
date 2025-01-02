@@ -33,8 +33,8 @@ async function GetSupplierTotalsRanking(req: FastifyRequest, res: FastifyReply) 
             year: d.year,
             months: d.months,
             total: d.total,
-            deputy_name: d.deputy_name,
-            deputy_id: d.deputy_id
+            parlamentarian_name: d.deputy_name,
+            parlamentarian_id: d.deputy_id
         })
     }
 

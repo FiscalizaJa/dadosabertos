@@ -2,55 +2,87 @@ import type { FastifyRequest, FastifyReply } from "fastify";
 import Auth from "../../services/auth/queryHandler";
 import dotenv from "dotenv";
 import axios from "axios";
+import genToken from "../../utils/genToken";
+import sessionUtils from "../../services/auth/sessionUtils";
 
 dotenv.config()
 
 const auth = new Auth()
 
-function LoginWithGoogle(req: FastifyRequest, res: FastifyReply) {
-    if(!this.googleOauth2.getAccessTokenFromAuthorizationCodeFlow) {
+async function Register(req: FastifyRequest, res: FastifyReply) {
+    const body = req.body as any
+    const email = body.email
+    const password = body.password
+    const name = body.name
+    
+    const user = await auth.getUserInfoFromDatabaseByEmail(email)
+
+    if(user) {
         return res.status(422).send({
-            error: "Não podemos te identificar agora, por favor, faça login novamente.",
-            code: "cannot_identify_now"
+            error: "User already exists"
         })
     }
 
-    this.googleOauth2.getAccessTokenFromAuthorizationCodeFlow(req, async (err: any, result: any) => {
-        if(err) {
-            console.error(err)
-            return res.status(422).send({
-                error: "Não foi possível processar sua solicitação.",
-                code: "unprocessable_entity"
-            })
-        } else {
-            const access_token = result.token.access_token
-            const refresh_token = result.token.refresh_token
-            const ttl = result.token.expires_at
+    const activation_token = genToken("hex", 8, email)
 
-            const userinfo: any = await auth.getFreshUserInfoFromAccess_token(access_token)
-            
-            if(!userinfo.email) {
-                await this.googleOauth2.revokeToken(access_token)
-                await this.googleOauth2.revokeToken(refresh_token)
-                return res.status(400).send({
-                    error: "Não foi possível obter acesso ao seu email. Nós precisamos dele para poder te identificar em nosso sistema. Revogamos a sua sessão, por favor, faça login novamente autorizando acesso ao email.",
-                    code: "email_not_granted"
-                })
-            }
+    const hashed_password = await sessionUtils.hashPassword(password)
 
-            await auth.createUserInDatabase({
-                id: userinfo.id,
-                email: userinfo.email,
-                name: userinfo.name,
-                activated: userinfo.verified_email,
-                avatar_url: userinfo.picture,
-                refresh_token: refresh_token || ""
-            })
+    await auth.createUserInDatabase({
+        email: email,
+        name: name,
+        password: hashed_password,
+        activated: false,
+        activation_token: activation_token
+    })
 
-            const maskToken = await auth.findMaskTokenForAccessToken(access_token) || await auth.createMaskTokenFromAccessToken(access_token, refresh_token || "", userinfo.id, ttl)
-            
-            return res.redirect(`${process.env.FRONTEND_URL!}/logged?token=${maskToken}`)
-        }
+    return res.status(201).send("Created")
+}
+
+async function ActivateAccount(req: FastifyRequest) {
+    const params = req.params as { ac_token: string }
+    const token = params.ac_token
+
+    const result = await auth.activateAccountByActivationToken(token)
+    console.log(result)
+
+    return "OK"
+}
+
+async function Login(req: FastifyRequest, res: FastifyReply) {
+    const body = req.body as any
+    const email = body.email
+    const plain_password = body.password
+
+    const user = await auth.getUserInfoFromDatabaseByEmail(email)
+
+    if(!user) {
+        return res.status(404).send({
+            error: "User not found",
+            code: "user_not_found"
+        })
+    }
+
+    if(!user.activated) {
+        return res.status(401).send({
+            error: "User not activated",
+            code: "user_not_activated"
+        })
+    }
+
+    const validPassword = await sessionUtils.validateHash(plain_password, user.password)
+
+    if(!validPassword) {
+        return res.status(401).send({
+            error: "Invalid password"
+        })
+    }
+
+    delete user.password // em hipotese alguma isso pode ir pro jwt
+
+    const token = await sessionUtils.generateJWT(user)
+
+    return res.status(200).send({
+        token
     })
 }
 
@@ -61,20 +93,10 @@ async function SessionUserinfo(req: FastifyRequest, res: FastifyReply) {
 }
 
 export default {
-    LoginWithGoogle,
+    Register,
+    Login,
+    ActivateAccount,
     SessionUserinfo
 }
 
-function revokeAccessToken(access_token: string) {
-    /* O plugin do Fastify é muito mal documentado e fica dando um erro totalmente do cara####, perdi a paciência e fiz minha própria função pra revogar o access token */
-    return new Promise((resolve, reject) => {
-        axios.post('https://oauth2.googleapis.com/revoke', null, {
-            params: {
-                token: access_token,
-            },
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-        }).then(response => resolve(response.data)).catch(e => reject(e))
-    })
-}
+// TODO: migrar para auth proprio

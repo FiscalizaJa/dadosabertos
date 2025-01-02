@@ -23,6 +23,29 @@ const schema = {
             enum: ["asc", "desc"],
             default: "asc",
             description: "Ordem dos itens."
+        },
+        id: {
+            type: "array",
+            maxItems: 230,
+            items: {
+                type: "number",
+                description: "IDs dos senadores a serem enviados (envia todos se omitido)."
+            }
+        },
+        searchTerm: {
+            type: "string",
+            description: "Termo para pesquisar os parlamentares (somente por nome).",
+            maxLength: 100
+        },
+        birth_uf: {
+            type: "string",
+            description: "UF de nascimento dos Senadores.",
+            maxLength: 100
+        },
+        party: {
+            type: "string",
+            description: "Partido dos Senadores.",
+            maxLength: 100
         }
     }
 }

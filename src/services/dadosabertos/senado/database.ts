@@ -15,6 +15,7 @@ export const prepareDB = async function() {
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             full_name TEXT NOT NULL,
+            bio TEXT,
             gender VARCHAR(2) NOT NULL,
             party TEXT,
             cpf TEXT,
@@ -25,6 +26,16 @@ export const prepareDB = async function() {
             acting BOOLEAN
         )
     ` // holder_id e alternate_type é presente apenas quando o Senador é suplente
+
+    await database`
+        CREATE TABLE IF NOT EXISTS senator_links (
+            id SERIAL PRIMARY KEY,
+            url TEXT NOT NULL,
+            type TEXT NOT NULL,
+            senator_id INTEGER NOT NULL,
+            CONSTRAINT fk_senator_link FOREIGN KEY(senator_id) REFERENCES senator(id)
+        )
+    `
 
     await database`
         CREATE TABLE IF NOT EXISTS office (
@@ -76,6 +87,12 @@ export const prepareDB = async function() {
             senator_id INTEGER,
             total DECIMAL(10, 2),
             CONSTRAINT idx_expenses_totals_unique UNIQUE (year, month, supplier, senator_name, senator_id, total)
+        )
+    `
+    await database`
+        CREATE TABLE IF NOT EXISTS expenses_query_hits (
+            id TEXT PRIMARY KEY,
+            hits INTEGER[]
         )
     `
 

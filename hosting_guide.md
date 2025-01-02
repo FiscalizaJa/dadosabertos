@@ -2,18 +2,35 @@
 Este guia serve como documentação para quem quiser fazer selfhost da plataforma. Bem como entender alguns detalhes técnicos.
 
 ## 📱 Requisitos mínimos
-Antes de tudo, existem alguns requisitos mínimos que você precisa para rodar tudo sem problemas:
-- Pelo menos 2 núcleos na CPU (intenso uso de concorrência)
-- 1,5GB de memória ram
-- 50GB de espaço em disco
+### 💻 Dependências
 - PostgreSQL >= 15.3
 - Redis
 - NodeJS >= V20.11
 - NGINX (opcional)
+- Ollama Server (apenas com funções de IA ativadas)
+
+### 🔒 Funções de IA desativadas
+- 2 núcleos de CPU
+- 1,5GB de memória ram
+- 50GB de espaço em disco (preferência SSD NVME)
+
+### 🤖 Funções de IA ativadas
+- 8 núcleos de CPU
+- 24GB de memória ram
+    - Pode ser necessário até 64gb para LLMs maiores
+- 200GB de espaço em disco (quase que obrigatório SSD NVME)
+- GPU com suporte ao Cuda ou ROCM (gigantesco ganho de performance)
+
 
 O projeto foi testado nas versões especificadas nos requisitos, por isso não posso garantir que tudo vá funcionar bem se as dependências estiverem em versões diferentes.
 
 O uso de memória pelo webserver é muito baixo, no entanto, para realizar atualizações dos dados é necessário uma quantidade significativa de memória, se você está em um ambiente com pouca ram, é altamente recomendável que modifique o `loader.config.json` nos módulos de `dadosabertos`, para carregar uma porção menor de dados na memória.
+
+Se você ativar as funções de IA, lembre-se de dedicar ao menos 16GB para o Ollama. Em um ambiente com 24GB de ram a divisão mais equilibrada pode ser:
+- 16gb ollama
+- 8gb resto dos serviços
+
+Você pode ser mais aventureiro e dedicar 20GB para o Ollama, mas cuidado pois o Postgres é super requisitado no momento de atualizar os dados, se faltar memória o processo será extremamente lento.
 
 ## 📦 Separação de diretórios
 Dentro de `src`, você vai notar que existem dois diretórios principais: `webserver` e `dadosabertos`.

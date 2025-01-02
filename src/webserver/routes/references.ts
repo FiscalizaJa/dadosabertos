@@ -14,6 +14,16 @@ const routes: RouteOptions[] = [
     },
     {
         method: "GET",
+        url: "/camara/references/parties",
+        handler: ReferencesController.GetCamaraParties,
+        schema: {
+            description: "Referência com a lista de siglas dos partidos na Câmara Dos Deputados",
+            summary: "Todas as siglas dos partidos na Câmara dos Deputados",
+            tags: ["Referências"]
+        }   
+    },
+    {
+        method: "GET",
         url: "/senado/references/alternate_type",
         handler: ReferencesController.GetSenadoAlternateTypeReference,
         schema: {
@@ -41,7 +51,17 @@ const routes: RouteOptions[] = [
             summary: "Tipos de despesa dos Senadores",
             tags: ["Referências"]
         }
-    }
+    },
+    {
+        method: "GET",
+        url: "/senado/references/parties",
+        handler: ReferencesController.GetSenadoParties,
+        schema: {
+            description: "Referência com a lista de siglas dos partidos no Senado",
+            summary: "Todas as siglas dos partidos no Senado",
+            tags: ["Referências"]
+        }   
+    },
 ]
 
 export default routes

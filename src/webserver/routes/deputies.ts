@@ -1,6 +1,8 @@
 import { RouteOptions } from "fastify";
 import DeputiesController from "../controllers/CamaraController";
 
+import CamaraController from "../controllers/CamaraController";
+
 const routes: RouteOptions[] = [
     {
         method: "GET",
@@ -24,6 +26,9 @@ const routes: RouteOptions[] = [
                                     items: {
                                         $ref: "deputy_resume_data"
                                     }
+                                },
+                                metadata: {
+                                    $ref: "all_parlamentarians_metadata"
                                 }
                             }
                         }
@@ -125,6 +130,52 @@ const routes: RouteOptions[] = [
                             schema: {
                                 data: {
                                     $ref: "deputy_expenses_data"
+                                },
+                                metadata: {
+                                    $ref: "all_parlamentarians_metadata"
+                                }
+                            }
+                        }
+                    },  
+                },
+                400: {
+                    type: "object",
+                    content: {
+                        "application/json": {
+                            schema: {
+                                error: {
+                                    type: "string"
+                                },
+                                code: {
+                                    type: "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    {
+        method: "GET",
+        url: "/camara/spendranking",
+        handler: CamaraController.SpendRanking,
+        schema: {
+            description: "Retorna um ranking para cada ano selecionado, com os Deputados que mais gastaram.",
+            summary: "Ranking de Deputados que mais gastaram em um período.",
+            tags: ["Câmara dos Deputados"],
+            querystring: {
+                $ref: "camara_suppliers_ranking_querystring"
+            },
+            response: {
+                200: {
+                    type: "object",
+                    content: {
+                        "application/json": {
+                            default: true,
+                            schema: {
+                                data: {
+                                    $ref: "deputies_spendrank_data"
                                 }
                             }
                         }
