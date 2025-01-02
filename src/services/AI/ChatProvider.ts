@@ -2,7 +2,6 @@ import GeminiChatProvider from "./Models/Gemini/ChatProvider";
 
 enum Provider {
     Gemini,
-    Ollama
 }
 
 class ChatProvider {
