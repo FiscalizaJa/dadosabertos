@@ -4,13 +4,11 @@ import AuthQueryHandler from "../../services/auth/queryHandler";
 import CamaraQueryHandler from "../../services/dadosabertos/camara/queryHandler";
 import SenadoQueryHandler from "../../services/dadosabertos/senado/queryHandler";
 import FullQueryHandler from "../../services/full_query/queryHandler";
-import OpenQuestionsQueryHanlder from "../../services/open_questions/queryHandler";
 
 const auth = new AuthQueryHandler()
 const camara = new CamaraQueryHandler()
 const senado = new SenadoQueryHandler()
 const fullquery = new FullQueryHandler()
-const open_questions = new OpenQuestionsQueryHanlder()
 
 async function SendHelloWorld(req: FastifyRequest, res: FastifyReply) {
     const workers = await queue.getWorkers()
@@ -19,14 +17,12 @@ async function SendHelloWorld(req: FastifyRequest, res: FastifyReply) {
         camara.getStat(),
         senado.getStat(),
         fullquery.getStat(),
-        open_questions.getStat()
     ])
 
     const auth_stats = stats[0]
     const camara_stats = stats[1]
     const senado_stats = stats[2]
     const fullquery_stats = stats[3] as any
-    const open_questions_stats = stats[4]
 
     res.status(200).send({
         hello: "world!",
@@ -39,7 +35,6 @@ async function SendHelloWorld(req: FastifyRequest, res: FastifyReply) {
                 ...fullquery_stats,
                 workers_online: workers.length
             },
-            open_questions: open_questions_stats
         }
     })
 }

@@ -110,13 +110,13 @@ async function save_senators() {
 
     logger.info("Writing senators to database...")
     await database`
-        INSERT INTO senator ${database(senators_data)}
+        INSERT INTO senado_senator ${database(senators_data)}
     `
     await database`
-        INSERT INTO office ${database(offices)}
+        INSERT INTO senado_senator_office ${database(offices)}
     `
     await database`
-        INSERT INTO senator_links ${database(links)}
+        INSERT INTO senado_senator_links ${database(links)}
     `
     logger.info("End")
 }
@@ -137,7 +137,7 @@ async function saveExpensesForYear(year: number) {
     let expenses = []
 
     const senators = await database`
-        SELECT id, name FROM senator
+        SELECT id, name FROM senado_senator
     `
     const senators_data = {}
 
@@ -195,7 +195,7 @@ async function writeExpenses(data: any[]) {
 
         while(!chunk.done && chunk.value) {
             promises.push(sql`
-                INSERT INTO expense ${database(chunk.value)} ON CONFLICT DO NOTHING
+                INSERT INTO senado_expense ${database(chunk.value)} ON CONFLICT DO NOTHING
             `)
             chunk = chunks.next()
         }
@@ -207,9 +207,9 @@ async function writeExpenses(data: any[]) {
 async function updatePreMadeData() {
     logger.info("Updating other tables")
     await database`
-        INSERT INTO supplier (identifier, name)
+        INSERT INTO senado_supplier (identifier, name)
         SELECT DISTINCT identifier, supplier
-        FROM expense
+        FROM senado_expense
         WHERE identifier IS NOT NULL AND identifier <> ''
         ON CONFLICT DO NOTHING
     `
@@ -222,10 +222,10 @@ async function updatePreMadeData() {
             name_parlamentarian,
             senator_id,
             SUM(liquid_value) AS total
-            FROM expense
+            FROM senado_expense
             GROUP BY year, month, supplier, name_parlamentarian, senator_id
         )
-        INSERT INTO expenses_total (year, month, supplier, senator_name, senator_id, total)
+        INSERT INTO senado_expenses_total (year, month, supplier, senator_name, senator_id, total)
         SELECT year, month, supplier, name_parlamentarian, senator_id, total FROM despesas ON CONFLICT DO NOTHING;
     `
     logger.info("Done.")

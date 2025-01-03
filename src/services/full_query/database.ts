@@ -1,17 +1,8 @@
-import postgres from "postgres";
-import dotenv from "dotenv";
-
-dotenv.config()
-
-const database = postgres(process.env.FULL_QUERY_DATABASE_URL!, {
-    transform: {
-        undefined: null
-    }
-})
+import database from "../postgres/Connection";
 
 export const prepareDB = async function() {
     await database`
-        CREATE TABLE IF NOT EXISTS query_result (
+        CREATE TABLE IF NOT EXISTS full_query_query_result (
             id INTEGER PRIMARY KEY,
             target TEXT NOT NULL,
             made_at TIMESTAMPTZ NOT NULL,
@@ -24,7 +15,7 @@ export const prepareDB = async function() {
     `
 
     await database`
-        CREATE INDEX IF NOT EXISTS idx_suppliers ON query_result USING GIN (suppliers);
+        CREATE INDEX IF NOT EXISTS idx_full_query_suppliers ON full_query_query_result USING GIN (suppliers);
     `.simple()
 }
 

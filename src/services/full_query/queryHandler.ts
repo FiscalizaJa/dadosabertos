@@ -2,8 +2,6 @@ import sql from "./database";
 import CamaraQueryHandler from "../dadosabertos/camara/queryHandler";
 import SenadoQueryHandler from "../dadosabertos/senado/queryHandler";
 
-import crypto from "crypto";
-
 const camara = new CamaraQueryHandler()
 const senado = new SenadoQueryHandler()
 
@@ -46,7 +44,7 @@ class QueryHandler {
             }
 
             sql`
-                INSERT INTO query_result ${sql(write_data)}
+                INSERT INTO full_query_query_result ${sql(write_data)}
             `.then(() => {
                 resolve(true)
             }).catch((e) => {
@@ -59,7 +57,7 @@ class QueryHandler {
     viewResult(id: number) {
         return new Promise((resolve, reject) => {
             sql`
-                UPDATE query_result
+                UPDATE full_query_query_result
                 SET
                     last_view = ${new Date()}
                 WHERE
@@ -75,7 +73,7 @@ class QueryHandler {
     deleteOldResults() {
         return new Promise((resolve, reject) => {
             sql`
-                DELETE FROM query_result
+                DELETE FROM full_query_query_result
                 WHERE
                     last_view < NOW() - INTERVAL '1 hour'
             `.then(() => {
@@ -113,7 +111,7 @@ class QueryHandler {
                 SELECT
                     expenses,
                     target
-                FROM query_result
+                FROM full_query_query_result
                 WHERE
                     id = ${id}
             `.catch(e => {
@@ -142,7 +140,7 @@ class QueryHandler {
                         target,
                         made_at,
                         author_id
-                    FROM query_result
+                    FROM full_query_query_result
                     WHERE
                         id = ${id}
                 ),
@@ -154,7 +152,7 @@ class QueryHandler {
                         SELECT
                             id,
                             JSONB_ARRAY_ELEMENTS(suppliers) AS suppliers
-                        FROM query_result
+                        FROM full_query_query_result
                         WHERE
                             id = ${id}
                         LIMIT ${suppliers_items} ${suppliers_page > 1 ? sql`OFFSET ${suppliers_offset}` : sql``}
@@ -165,7 +163,7 @@ class QueryHandler {
                     SELECT
                         id,
                         insights
-                    FROM query_result
+                    FROM full_query_query_result
                     WHERE
                         id = ${id}
                 )

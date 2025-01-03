@@ -1,5 +1,7 @@
 import sql from "./database";
 import type { User } from "../../interfaces/User";
+import { Except } from "type-fest";
+import postgres from "postgres";
 
 class QueryHandler {
     static TOKEN_LENGTH = 10
@@ -23,7 +25,7 @@ class QueryHandler {
         })
     }
 
-    public activateAccountByActivationToken(activation_token: string) {
+    public activateAccountByActivationToken(activation_token: string): Promise<boolean> {
         return new Promise(async (resolve, reject) => {
             await sql`
                 UPDATE users
@@ -32,11 +34,12 @@ class QueryHandler {
                     activation_token = NULL
                 WHERE
                     activation_token = ${activation_token}
+                RETURNING id
 
-            `.then(() => resolve(true)).catch(e => reject(e))
+            `.then((data) => (data?.length || 0) > 0).catch(e => reject(e))
         })
     }
-    public createUserInDatabase(userData: User & { activated: boolean, activation_token: string }) {
+    public createUserInDatabase(userData: Except<User, "id">) {
         const columns = ["email", "name", "password", "activated", "activation_token"]
         return new Promise((resolve, reject) => {
             sql.begin(async transaction => {
@@ -56,7 +59,7 @@ class QueryHandler {
 
     public getUserInfoFromDatabaseById(id: string): Promise<User> {
         return new Promise(async (resolve, reject) => {
-            const data = await sql`
+            const data: postgres.RowList<User[]> = await sql`
                 SELECT 
                     id, 
                     email, 
@@ -73,7 +76,7 @@ class QueryHandler {
 
     public getUserInfoFromDatabaseByEmail(email: string): Promise<User> {
         return new Promise(async (resolve, reject) => {
-            const data = await sql`
+            const data: postgres.RowList<User[]> = await sql`
                 SELECT 
                     id, 
                     email, 

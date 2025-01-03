@@ -130,15 +130,15 @@ async function saveDeputies() {
     logger.info("All data prepared. Now, we will write.")
 
     await database`
-        INSERT INTO deputy ${database(deputies_data)}
+        INSERT INTO camara_deputy ${database(deputies_data)}
     `
 
     await Promise.all([
         database`
-            INSERT INTO office ${database(offices)}
+            INSERT INTO camara_deputy_office ${database(offices)}
         `,
         database`
-            INSERT INTO deputy_links ${database(links)}
+            INSERT INTO camara_deputy_links ${database(links)}
         `
     ])
 
@@ -158,7 +158,7 @@ function saveExpensesForYear(year: number) {
         stream.pipe(parser)
     
         const deputy_ids = await database`
-            SELECT id FROM deputy
+            SELECT id FROM camara_deputy
         `
         const deputy_list = {}
         for (const deputy of deputy_ids) {
@@ -264,7 +264,7 @@ function writeExpenses(expenses: any) {
 
             while(!chunk.done && chunk.value) {
                 await sql`
-                    INSERT INTO expense ${sql(chunk.value)} ON CONFLICT DO NOTHING
+                    INSERT INTO camara_expense ${sql(chunk.value)} ON CONFLICT DO NOTHING
                 `
                 chunk = chunks.next()
             }
@@ -294,9 +294,9 @@ async function downloadExpensesStartingFromYear(startingYear: number) {
 async function updatePreMadeData() {
     logger.info("Updating other tables")
     await database`
-        INSERT INTO supplier (identifier, name)
+        INSERT INTO camara_supplier (identifier, name)
         SELECT DISTINCT identifier, supplier
-        FROM expense
+        FROM camara_expense
         WHERE identifier IS NOT NULL AND identifier <> ''
         ON CONFLICT (name) DO NOTHING
     `
@@ -305,10 +305,10 @@ async function updatePreMadeData() {
         WITH cte AS (
             SELECT id, url_document,
                 ROW_NUMBER() OVER (PARTITION BY url_document ORDER BY id DESC) AS rn
-            FROM expense
+            FROM camara_expense
             WHERE url_document IS NOT NULL AND url_document != ''
         )
-        DELETE FROM expense
+        DELETE FROM camara_expense
         WHERE id IN (SELECT id FROM cte WHERE rn > 1)
     `
 
@@ -320,10 +320,10 @@ async function updatePreMadeData() {
             name_parlamentarian,
             deputy_id,
             SUM(liquid_value) AS total
-            FROM expense
+            FROM camara_expense
             GROUP BY year, month, supplier, name_parlamentarian, deputy_id
         )
-        INSERT INTO expenses_total (year, month, supplier, deputy_name, deputy_id, total)
+        INSERT INTO camara_expenses_total (year, month, supplier, deputy_name, deputy_id, total)
         SELECT year, month, supplier, name_parlamentarian, deputy_id, total FROM despesas ON CONFLICT DO NOTHING;
     `
     logger.info("Done.")

@@ -52,7 +52,7 @@ class QueryHandler {
     getAllSenatorsWithoutFiltersGenerator(batchSize: number) {
         const data = database`
             SELECT *
-            FROM senator
+            FROM senado_senator
         `.cursor(batchSize)
 
         return data
@@ -81,7 +81,7 @@ class QueryHandler {
                 database`
                     SELECT
                         *
-                    FROM senator
+                    FROM senado_senator
                     WHERE
                         alternate_type = 0
                         ${filter.id ? database`AND id IN ${database(filter.id)}` : database``}
@@ -94,7 +94,7 @@ class QueryHandler {
                 database`
                     SELECT
                         COUNT(*) AS items
-                    FROM senator
+                    FROM senado_senator
                     WHERE
                         alternate_type = 0
                         ${filter.id ? database`AND id IN ${database(filter.id)}` : database``}
@@ -117,15 +117,15 @@ class QueryHandler {
         return new Promise(async (resolve, reject) => {
             const promises = await Promise.all([
                 database`
-                    SELECT id, name, full_name, bio, gender, party, birth_date, birth_uf, alternate_type, holder_id FROM senator
+                    SELECT id, name, full_name, bio, gender, party, birth_date, birth_uf, alternate_type, holder_id FROM senado_senator
                     WHERE id = ${id}
                 `,
                 database`
-                    SELECT phone, address, email FROM office
+                    SELECT phone, address, email FROM senado_senator_office
                     WHERE senator_id = ${id}
                 `,
                 database`
-                    SELECT url, type FROM senator_links
+                    SELECT url, type FROM senado_senator_links
                     WHERE senator_id = ${id}
                 `
             ]).catch(e => reject(e))
@@ -201,7 +201,7 @@ class QueryHandler {
             }
             
             await database`
-                UPDATE senator SET bio = ${bio} WHERE id = ${id}
+                UPDATE senado_senator SET bio = ${bio} WHERE id = ${id}
             `
         
             resolve(bio)
@@ -221,7 +221,7 @@ class QueryHandler {
             const queries = await Promise.all([
                 database`
                     SELECT * 
-                    FROM expense 
+                    FROM senado_expense 
                     WHERE 
                         senator_id = ${id} 
                         AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
@@ -231,7 +231,7 @@ class QueryHandler {
                 database`
                     SELECT
                         COUNT(*) AS items
-                    FROM expense
+                    FROM senado_expense
                     WHERE 
                         senator_id = ${id} 
                         AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
@@ -253,7 +253,7 @@ class QueryHandler {
         return new Promise(async (resolve, reject) => {
             const data = await database`
                 SELECT *
-                FROM expense
+                FROM senado_expense
                 WHERE id = ${id}
             `.catch(e => reject(e))
 
@@ -268,14 +268,14 @@ class QueryHandler {
                 WITH hits AS (
                     SELECT
                         UNNEST(hits) as hit
-                    FROM expenses_query_hits
+                    FROM senado_expenses_query_hits
                     WHERE
                         id = ${hitId}
                     LIMIT ${itens} ${page > 1 ? database`OFFSET ${OFFSET}` : database``}
                 )
                 SELECT *
                 FROM
-                    expense
+                    senado_expense
                 WHERE
                     id in (SELECT hit FROM hits)
             `.catch(e => {
@@ -294,7 +294,7 @@ class QueryHandler {
             const data = await database`
                 SELECT
                     ARRAY_AGG(DISTINCT party) as parties
-                FROM senator
+                FROM senado_senator
             `.catch(e => reject(e))
         
             resolve(data[0].parties)
@@ -314,7 +314,7 @@ class QueryHandler {
                     COUNT(*) AS purchases, 
                     SUM(liquid_value) AS total, 
                     identifier
-                FROM expense
+                FROM senado_expense
                 WHERE 
                     senator_id = ${id}
                     AND year IN ${database(filter.year)}
@@ -339,7 +339,7 @@ class QueryHandler {
                 SELECT 
                     SUM(liquid_value) as total,
                     subquota
-                FROM expense
+                FROM senado_expense
                 WHERE 
                     senator_id = ${id}
                     AND year IN ${database(filter.year)}
@@ -364,7 +364,7 @@ class QueryHandler {
                     year,
                     month,
                     SUM(liquid_value) AS total
-                FROM expense
+                FROM senado_expense
                 WHERE
                     senator_id = ${id}
                     AND year IN ${database(filter.year)}
@@ -388,7 +388,7 @@ class QueryHandler {
                     year,
                     ARRAY_AGG(DISTINCT month) AS months,
                     SUM(total) AS total
-                FROM expenses_total
+                FROM senado_expenses_total
                 WHERE
                     supplier IN ${database(names)}
                     AND month in ${database(filter.month)}
@@ -429,7 +429,7 @@ class QueryHandler {
                         senator_name,
                         senator_id,
                         ROW_NUMBER() OVER (PARTITION BY year ORDER BY total DESC) as rn
-                    FROM expenses_total
+                    FROM senado_expenses_total
                     WHERE
                         supplier IN ${database(names)}
                         AND month IN ${database(filter.month)}
@@ -447,7 +447,7 @@ class QueryHandler {
     getNamesFromIdentifier(identifier: string): Promise<string[]> {
         return new Promise(async (resolve, reject) => {
             const data = await database`
-                SELECT name FROM supplier
+                SELECT name FROM senado_supplier
                 WHERE identifier = ${identifier}
             `
 
@@ -458,7 +458,7 @@ class QueryHandler {
     getAllSuppliersWithoutFiltersGenerator(batchSize: number) {
         const data = database`
             SELECT *
-            FROM supplier
+            FROM senado_supplier
         `.cursor(batchSize)
 
         return data
@@ -519,7 +519,7 @@ class QueryHandler {
                         total,
                         senator_name,
                         senator_id
-                    FROM expenses_total
+                    FROM senado_expenses_total
                     WHERE
                         month IN ${database(filter.month)}
                         AND year IN ${database(filter.year)}
@@ -553,7 +553,7 @@ class QueryHandler {
                         year,
                         subquota,
                         SUM(liquid_value) AS total
-                    FROM expense
+                    FROM senado_expense
                     WHERE
                         month IN ${database(filter.month)}
                         AND year IN ${database(filter.year)}
@@ -579,7 +579,7 @@ class QueryHandler {
         })
     }
 
-    fullQuery(full_query: FullQuery, limit: number = 150) {
+    fullQuery(full_query: FullQuery[], limit: number = 150) {
         const conversions = {
             "MINOR": "<",
             "MORE": ">",
@@ -607,10 +607,10 @@ class QueryHandler {
             const hitsId = crypto.randomBytes(16).toString("hex")
             
             const d = await database`
-                INSERT INTO expenses_query_hits (id, hits)
+                INSERT INTO senado_expenses_query_hits (id, hits)
                 VALUES (
                     ${hitsId}, 
-                    (SELECT ARRAY(SELECT id FROM expense WHERE ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)} ))
+                    (SELECT ARRAY(SELECT id FROM senado_expense WHERE ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)} ))
                 );
             `.catch(e => {
                 console.error(e)
@@ -642,7 +642,7 @@ class QueryHandler {
                         name_parlamentarian AS senator_name,
                         supplier AS name,
                         identifier
-                    FROM expense
+                    FROM senado_expense
                     WHERE
                         ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
                     GROUP BY year, month, liquid_value, senator_id, senator_name, name, identifier
@@ -662,7 +662,7 @@ class QueryHandler {
                     AVG(liquid_value) AS average,
                     COUNT(*) AS count,
                     STDDEV_SAMP(liquid_value) AS standard_deviation
-                FROM expense
+                FROM senado_expense
                 WHERE
                     ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
             `
@@ -673,7 +673,7 @@ class QueryHandler {
                     SUM(liquid_value) AS total,
                     AVG(liquid_value) AS average,
                     COUNT(*) AS count
-                FROM expense
+                FROM senado_expense
                 WHERE
                     ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
                 GROUP BY year
@@ -728,7 +728,7 @@ class QueryHandler {
                 WITH hits AS (
                     SELECT
                         UNNEST(hits) as hit
-                    FROM expenses_query_hits
+                    FROM senado_expenses_query_hits
                     WHERE
                         id = ${hitId}
                 )
@@ -737,7 +737,7 @@ class QueryHandler {
                     SUM(liquid_value) AS total,
                     AVERAGE(liquid_value) AS average
                 FROM
-                    expense
+                    senado_expense
                 WHERE
                     id IN (select hit from hits)
                 GROUP BY year

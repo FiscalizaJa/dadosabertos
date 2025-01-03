@@ -9,8 +9,6 @@ import { syncAll } from "../services/meilisearch/loader";
 dotenv.config()
 
 export default function execute() {
-    const values = ["deputies", "senators", "all"]
-
     select({
         message: "Qual banco de dados você quer atualizar?:",
         choices: [

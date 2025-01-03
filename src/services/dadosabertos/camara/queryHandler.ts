@@ -52,7 +52,7 @@ class QueryHandler {
     getAllDeputiesWithoutFiltersGenerator(batchSize: number) {
         const data = database`
             SELECT *
-            FROM deputy
+            FROM camara_deputy
         `.cursor(batchSize)
 
         return data
@@ -65,14 +65,14 @@ class QueryHandler {
                 WITH hits AS (
                     SELECT
                         UNNEST(hits) as hit
-                    FROM expenses_query_hits
+                    FROM camara_expenses_query_hits
                     WHERE
                         id = ${hitId}
                     LIMIT ${itens} ${page > 1 ? database`OFFSET ${OFFSET}` : database``}
                 )
                 SELECT *
                 FROM
-                    expense
+                    camara_expense
                 WHERE
                     id in (SELECT hit FROM hits)
             `.catch(e => {
@@ -91,7 +91,7 @@ class QueryHandler {
             const data = await database`
                 SELECT
                     ARRAY_AGG(DISTINCT party) as parties
-                FROM deputy
+                FROM camara_deputy
             `.catch(e => reject(e))
         
             resolve(data[0].parties)
@@ -121,7 +121,7 @@ class QueryHandler {
                 database`
                     SELECT
                         *
-                    FROM deputy
+                    FROM camara_deputy
                         ${filter.id ? database`WHERE id IN ${database(filter.id)}` : database``}
                         ${filter.birth_uf ? database`${filter.id ? database.unsafe(`AND`) : database`WHERE`} birth_uf = ${filter.birth_uf}` : database``}
                         ${filter.party ? database`${filter.birth_uf ? database.unsafe(`AND`) : database`WHERE`} party = ${filter.party}` : database``}
@@ -132,7 +132,7 @@ class QueryHandler {
                 database`
                     SELECT
                         COUNT(*) AS items
-                    FROM deputy
+                    FROM camara_deputy
                         ${filter.id ? database`WHERE id IN ${database(filter.id)}` : database``}
                         ${filter.birth_uf ? database`${filter.id ? database.unsafe(`AND`) : database`WHERE`} birth_uf = ${filter.birth_uf}` : database``}
                         ${filter.party ? database`${filter.birth_uf ? database.unsafe(`AND`) : database`WHERE`} party = ${filter.party}` : database``}
@@ -153,15 +153,15 @@ class QueryHandler {
         return new Promise(async (resolve, reject) => {
             const promises = await Promise.all([
                 database`
-                    SELECT * FROM deputy
+                    SELECT * FROM camara_deputy
                     WHERE id = ${id}
                 `,
                 database`
-                    SELECT name, building, room, floor, phone, email FROM office
+                    SELECT name, building, room, floor, phone, email FROM camara_deputy_office
                     WHERE deputy_id = ${id}
                 `,
                 database`
-                    SELECT url, type FROM deputy_links
+                    SELECT url, type FROM camara_deputy_links
                     WHERE deputy_id = ${id}
                 `
             ])
@@ -237,7 +237,7 @@ class QueryHandler {
             }
             
             await database`
-                UPDATE deputy SET bio = ${bio} WHERE id = ${id}
+                UPDATE camara_deputy SET bio = ${bio} WHERE id = ${id}
             `
         
             resolve(bio)
@@ -257,7 +257,7 @@ class QueryHandler {
             const queries = await Promise.all([
                 database`
                     SELECT ${database(QueryHandler.EXPENSE_KEYS)}
-                    FROM expense 
+                    FROM camara_expense 
                     WHERE 
                         deputy_id = ${id} 
                         AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
@@ -267,7 +267,7 @@ class QueryHandler {
                 database`
                     SELECT
                         COUNT(*) AS items
-                    FROM expense 
+                    FROM camara_expense 
                     WHERE 
                         deputy_id = ${id} 
                         AND year IN ${database(filter.year)} AND month IN ${database(filter.month)}
@@ -297,7 +297,7 @@ class QueryHandler {
                     COUNT(*) AS purchases, 
                     SUM(liquid_value) AS total, 
                     identifier
-                FROM expense
+                FROM camara_expense
                 WHERE 
                     deputy_id = ${id}
                     AND year IN ${database(filter.year)}
@@ -323,7 +323,7 @@ class QueryHandler {
                     SUM(liquid_value) as total,
                     subquota,
                     number_specification_subquota
-                FROM expense
+                FROM camara_expense
                 WHERE 
                     deputy_id = ${id}
                     AND year IN ${database(filter.year)}
@@ -348,7 +348,7 @@ class QueryHandler {
                     year,
                     month,
                     SUM(liquid_value) AS total
-                FROM expense
+                FROM camara_expense
                 WHERE
                     deputy_id = ${id}
                     AND year IN ${database(filter.year)}
@@ -372,7 +372,7 @@ class QueryHandler {
                     year,
                     ARRAY_AGG(DISTINCT month) AS months,
                     SUM(total) AS total
-                FROM expenses_total
+                FROM camara_expenses_total
                 WHERE
                     supplier IN ${database(names)}
                     AND month in ${database(filter.month)}
@@ -413,7 +413,7 @@ class QueryHandler {
                         deputy_name,
                         deputy_id,
                         ROW_NUMBER() OVER (PARTITION BY year ORDER BY total DESC) as rn
-                    FROM expenses_total
+                    FROM camara_expenses_total
                     WHERE
                         supplier IN ${database(names)}
                         AND month IN ${database(filter.month)}
@@ -431,7 +431,7 @@ class QueryHandler {
     getNamesFromIdentifier(identifier: string): Promise<string[]> {
         return new Promise(async (resolve, reject) => {
             const data = await database`
-                SELECT name FROM supplier
+                SELECT name FROM camara_supplier
                 WHERE identifier = ${identifier}
             `
 
@@ -443,7 +443,7 @@ class QueryHandler {
         return new Promise(async (resolve, reject) => {
             const data = await database`
                 SELECT ${database(QueryHandler.EXPENSE_KEYS)}
-                FROM expense
+                FROM camara_expense
                 WHERE id = ${id}
             `
 
@@ -454,7 +454,7 @@ class QueryHandler {
     getAllSuppliersWithoutFiltersGenerator(batchSize: number) {
         const data = database`
             SELECT *
-            FROM supplier
+            FROM camara_supplier
         `.cursor(batchSize)
 
         return data
@@ -515,7 +515,7 @@ class QueryHandler {
                         total,
                         deputy_name,
                         deputy_id
-                    FROM expenses_total
+                    FROM camara_expenses_total
                     WHERE
                         month IN ${database(filter.month)}
                         AND year IN ${database(filter.year)}
@@ -551,7 +551,7 @@ class QueryHandler {
                         subquota,
                         number_specification_subquota,
                         SUM(liquid_value) AS total
-                    FROM expense
+                    FROM camara_expense
                     WHERE
                         month IN ${database(filter.month)}
                         AND year IN ${database(filter.year)}
@@ -577,7 +577,7 @@ class QueryHandler {
         })
     }
 
-    fullQuery(full_query: FullQuery, limit: number = 150) {
+    fullQuery(full_query: FullQuery[], limit: number = 150) {
         const conversions = {
             "MINOR": "<",
             "MORE": ">",
@@ -605,10 +605,10 @@ class QueryHandler {
             const hitsId = crypto.randomBytes(16).toString("hex")
             
             const d = await database`
-                INSERT INTO expenses_query_hits (id, hits)
+                INSERT INTO camara_expenses_query_hits (id, hits)
                 VALUES (
                     ${hitsId}, 
-                    (SELECT ARRAY(SELECT id FROM expense WHERE ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)} ))
+                    (SELECT ARRAY(SELECT id FROM camara_expense WHERE ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)} ))
                 );
             `.catch(e => {
                 console.error(e)
@@ -640,7 +640,7 @@ class QueryHandler {
                         name_parlamentarian AS deputy_name,
                         supplier AS name,
                         identifier
-                    FROM expense
+                    FROM camara_expense
                     WHERE
                         ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
                     GROUP BY year, month, liquid_value, deputy_id, deputy_name, name, identifier
@@ -660,7 +660,7 @@ class QueryHandler {
                     AVG(liquid_value) AS average,
                     COUNT(*) AS count,
                     STDDEV_SAMP(liquid_value) AS standard_deviation
-                FROM expense
+                FROM camara_expense
                 WHERE
                     ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
             `
@@ -671,7 +671,7 @@ class QueryHandler {
                     SUM(liquid_value) AS total,
                     AVG(liquid_value) AS average,
                     COUNT(*) AS count
-                FROM expense
+                FROM camara_expense
                 WHERE
                     ${conditions.flatMap((x, i) => separate_indexes.includes(i) ? [database`${database.unsafe(x as any)}`] : x)}
                 GROUP BY year
@@ -727,7 +727,7 @@ class QueryHandler {
                 WITH hits AS (
                     SELECT
                         UNNEST(hits) as hit
-                    FROM expenses_query_hits
+                    FROM camara_expenses_query_hits
                     WHERE
                         id = ${hitId}
                 )
@@ -736,7 +736,7 @@ class QueryHandler {
                     SUM(liquid_value) AS total,
                     AVERAGE(liquid_value) AS average
                 FROM
-                    expense
+                    camara_expense
                 WHERE
                     id IN (select hit from hits)
                 GROUP BY year

@@ -1,13 +1,4 @@
-import postgres from "postgres";
-import dotenv from "dotenv";
-
-dotenv.config()
-
-const database = postgres(process.env.AUTH_DATABASE_URL!, {
-    transform: {
-        undefined: null
-    }
-})
+import database from "../postgres/Connection";
 
 export const prepareDB = async function() {
     await database`

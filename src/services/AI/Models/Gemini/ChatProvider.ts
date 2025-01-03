@@ -1,11 +1,8 @@
 import dotenv from "dotenv";
 import genai, { SchemaType } from "@google/generative-ai";
-import loadFunctions from "../../functions.loader";
 import CamaraQueryHandler from "../../../dadosabertos/camara/queryHandler";
 import SenadoQueryHandler from "../../../dadosabertos/senado/queryHandler";
 import AuthQueryHandler from "../../../auth/queryHandler";
-
-import type { GPTFunctionMeta, GPTMessage } from "../../../../interfaces/GPTMessage";
 
 dotenv.config()
 

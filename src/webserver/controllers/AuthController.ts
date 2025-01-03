@@ -38,14 +38,19 @@ async function Register(req: FastifyRequest, res: FastifyReply) {
     return res.status(201).send("Created")
 }
 
-async function ActivateAccount(req: FastifyRequest) {
+async function ActivateAccount(req: FastifyRequest, res: FastifyReply) {
     const params = req.params as { ac_token: string }
     const token = params.ac_token
 
     const result = await auth.activateAccountByActivationToken(token)
-    console.log(result)
 
-    return "OK"
+    if(result) {
+        return "OK"
+    } else {
+        res.status(404).send({
+            error: "Account not found"
+        })
+    }
 }
 
 async function Login(req: FastifyRequest, res: FastifyReply) {

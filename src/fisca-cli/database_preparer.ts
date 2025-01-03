@@ -26,11 +26,6 @@ export default function execute() {
                 value: "auth"
             },
             {
-                name: "FiscalizaJá Open Questions",
-                description: "Banco de dados relacionado ao FiscalizaJá Open Questions.",
-                value: "open_questions"
-            },
-            {
                 name: "FiscalizaJá Full Query",
                 description: "Banco de dados relacionado ao FiscalizaJá Full Query",
                 value: "full_query"
@@ -61,6 +56,7 @@ export default function execute() {
                     logger.error(e)
                     process.exit()
                 })
+            break
             case "senators":
                 logger.info("Preparando banco de dados: Senado Federal")
     
@@ -81,16 +77,6 @@ export default function execute() {
                 await auth_db.prepareDB().then(() => {
                     logger.info("Preparacao concluida")
                     auth_db.default.end()
-                }).catch((e) => {
-                    logger.error("Nao foi possivel concluir a preparacao")
-                    logger.error(e)
-                })
-            break
-            case "open_questions":
-                const open_questions_db = await import("../services/open_questions/database")
-                open_questions_db.prepareDB().then(() => {
-                    logger.info("Preparacao concluida")
-                    open_questions_db.default.end()
                 }).catch((e) => {
                     logger.error("Nao foi possivel concluir a preparacao")
                     logger.error(e)

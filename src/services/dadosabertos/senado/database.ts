@@ -1,17 +1,8 @@
-import postgres from "postgres";
-import dotenv from "dotenv";
-
-dotenv.config()
-
-const database = postgres(process.env.SENADO_DATABASE_URL!, {
-    transform: {
-        undefined: null
-    }
-})
+import database from "../../postgres/Connection";
 
 export const prepareDB = async function() {
     await database`
-        CREATE TABLE IF NOT EXISTS senator (
+        CREATE TABLE IF NOT EXISTS senado_senator (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             full_name TEXT NOT NULL,
@@ -28,28 +19,28 @@ export const prepareDB = async function() {
     ` // holder_id e alternate_type é presente apenas quando o Senador é suplente
 
     await database`
-        CREATE TABLE IF NOT EXISTS senator_links (
+        CREATE TABLE IF NOT EXISTS senado_senator_links (
             id SERIAL PRIMARY KEY,
             url TEXT NOT NULL,
             type TEXT NOT NULL,
             senator_id INTEGER NOT NULL,
-            CONSTRAINT fk_senator_link FOREIGN KEY(senator_id) REFERENCES senator(id)
+            CONSTRAINT fk_senator_link FOREIGN KEY(senator_id) REFERENCES senado_senator(id)
         )
     `
 
     await database`
-        CREATE TABLE IF NOT EXISTS office (
+        CREATE TABLE IF NOT EXISTS senado_senator_office (
             id SERIAL PRIMARY KEY,
             phone TEXT[],
             address TEXT,
             email TEXT,
             senator_id INTEGER UNIQUE,
-            CONSTRAINT fk_senator_office FOREIGN KEY(senator_id) REFERENCES senator(id)
+            CONSTRAINT fk_senator_office FOREIGN KEY(senator_id) REFERENCES senado_senator(id)
         )
     ` // Muitos Senadores têm mais de um número de telefone, por isso o campo phone aqui é um array.
 
     await database`
-        CREATE TABLE IF NOT EXISTS expense (
+        CREATE TABLE IF NOT EXISTS senado_expense (
             id INTEGER PRIMARY KEY,
             year INTEGER NOT NULL,
             month INTEGER NOT NULL,
@@ -64,12 +55,12 @@ export const prepareDB = async function() {
             liquid_value DECIMAL(10, 2),
             insert_date DATE,
             senator_id INTEGER,
-            CONSTRAINT fk_senator_expense FOREIGN KEY (senator_id) REFERENCES senator(id)
+            CONSTRAINT fk_senator_expense FOREIGN KEY (senator_id) REFERENCES senado_senator(id)
         )
     `
 
     await database`
-        CREATE TABLE IF NOT EXISTS supplier (
+        CREATE TABLE IF NOT EXISTS senado_supplier (
             id SERIAL PRIMARY KEY,
             identifier TEXT,
             name TEXT UNIQUE,
@@ -78,7 +69,7 @@ export const prepareDB = async function() {
     `
 
     await database`
-        CREATE TABLE IF NOT EXISTS expenses_total (
+        CREATE TABLE IF NOT EXISTS senado_expenses_total (
             id SERIAL PRIMARY KEY,
             year INTEGER,
             month INTEGER,
@@ -86,22 +77,22 @@ export const prepareDB = async function() {
             senator_name TEXT,
             senator_id INTEGER,
             total DECIMAL(10, 2),
-            CONSTRAINT idx_expenses_totals_unique UNIQUE (year, month, supplier, senator_name, senator_id, total)
+            CONSTRAINT idx_senado_expenses_totals_unique UNIQUE (year, month, supplier, senator_name, senator_id, total)
         )
     `
     await database`
-        CREATE TABLE IF NOT EXISTS expenses_query_hits (
+        CREATE TABLE IF NOT EXISTS senado_expenses_query_hits (
             id TEXT PRIMARY KEY,
             hits INTEGER[]
         )
     `
 
     await database`
-        CREATE INDEX IF NOT EXISTS idx_senator_expense ON expense (year, month, senator_id, subquota)
+        CREATE INDEX IF NOT EXISTS idx_senado_senator_expense ON senado_expense (year, month, senator_id, subquota)
     `
 
     await database`
-        CREATE INDEX IF NOT EXISTS idx_suppliers_ts ON supplier USING GIN (name_vector)
+        CREATE INDEX IF NOT EXISTS idx_senado_suppliers_ts ON senado_supplier USING GIN (name_vector)
     `
 }
 

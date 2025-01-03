@@ -11,7 +11,7 @@ const fullquery = new FullQueryHanlder();
 
 async function CreateQueryExpenses(req: FastifyRequest, res: FastifyReply) {
     const query = req.query as { target: string }
-    const body = req.body as FullQuery
+    const body = req.body as FullQuery[]
     const user = req.user
 
     const invalid_properties = body.map(q => {
