@@ -7,30 +7,16 @@ Este guia serve como documentação para quem quiser fazer selfhost da plataform
 - Redis
 - NodeJS >= V20.11
 - NGINX (opcional)
-- Ollama Server (apenas com funções de IA ativadas)
 
-### 🔒 Funções de IA desativadas
+### Hardware mínimo recomendado
 - 2 núcleos de CPU
 - 1,5GB de memória ram
 - 50GB de espaço em disco (preferência SSD NVME)
-
-### 🤖 Funções de IA ativadas
-- 8 núcleos de CPU
-- 24GB de memória ram
-    - Pode ser necessário até 64gb para LLMs maiores
-- 200GB de espaço em disco (quase que obrigatório SSD NVME)
-- GPU com suporte ao Cuda ou ROCM (gigantesco ganho de performance)
 
 
 O projeto foi testado nas versões especificadas nos requisitos, por isso não posso garantir que tudo vá funcionar bem se as dependências estiverem em versões diferentes.
 
 O uso de memória pelo webserver é muito baixo, no entanto, para realizar atualizações dos dados é necessário uma quantidade significativa de memória, se você está em um ambiente com pouca ram, é altamente recomendável que modifique o `loader.config.json` nos módulos de `dadosabertos`, para carregar uma porção menor de dados na memória.
-
-Se você ativar as funções de IA, lembre-se de dedicar ao menos 16GB para o Ollama. Em um ambiente com 24GB de ram a divisão mais equilibrada pode ser:
-- 16gb ollama
-- 8gb resto dos serviços
-
-Você pode ser mais aventureiro e dedicar 20GB para o Ollama, mas cuidado pois o Postgres é super requisitado no momento de atualizar os dados, se faltar memória o processo será extremamente lento.
 
 ## 📦 Separação de diretórios
 Dentro de `src`, você vai notar que existem dois diretórios principais: `webserver` e `dadosabertos`.
@@ -74,7 +60,7 @@ Antes disso, dê uma olhada no `.env.example` e crie as variáveis de ambiente n
 Você deve ter notado que o projeto possui uma CLI própria muito simples para algumas tarefas.
 Com ela, você deve:
 - Preparar os bancos de dados (basta selecionar as opções, não tem erro).
-- Salvar os dados pela primeira vez nos seus respectivos banco de dados (você pode optar por esperar o cronjob fazer isso, todo dia às 6 da manhã xD)
+- Salvar os dados pela primeira vez nos seus respectivos banco de dados (você pode optar por esperar o cronjob fazer isso, todo dia às 6 da manhã xD).
 
 ## 🦅 Rodando o webserver
 Depois que você preparou todos os bancos de dados e salvou os dados, para começar servindo tudo, você deve rodar o webserver.
@@ -92,14 +78,14 @@ A API foi feita com o pensamento de que haverá um proxy reverso lidando com tud
 - Rodar a API em plataformas serverless (Vercel, Bohr, etc)
     - Embora seja totalmente possível e provavelmente funcione, a estrutura como um todo não foi preparada para rodar num ambiente serverless onde muitas coisas podem vir a explodir (como as apis padrões do Nodejs), por isso não recomendo.
 - Instância PostgreSQL com recursos compartilhados (💀)
-    - O motivo de eu não recomendar de forma alguma esse tipo de hospedagem para o banco de dados, é que em alguns momentos ele é puxado ao limite (na atualização dos dados por exemplo), o que demoraria muito tempo nos recursos limitados de uma hospedagem compartilhada e ainda afetaria as outras pessoas.
+    - O motivo de eu não recomendar de forma alguma esse tipo de hospedagem para o banco de dados, é que em alguns momentos ele é puxado ao limite (na atualização dos dados por exemplo), o que demoraria muito tempo nos recursos limitados de uma hospedagem compartilhada e ainda afetaria outras pessoas.
 - Menos de 1,5GB de ram disponível para a aplicação
     - Embora o webserver em si seja extremamente leve, a atualização dos dados requer muito da memória, pois lê diversos arquivos jsons gigantes, faz muitas conversões e ainda precisa criar transações concorrentes no banco de dados.
 
 ## 🔎 RECOMENDO
 - Rodar o banco de dados e a API juntos em um servidor VPS.
     - Se possível, não expor o banco de dados para a internet, a não ser que você queira conectar de fora com ferramentas como o PgAdmin.
-- Utilizar o PM2 para gerenciar o processo do webserver.
+- Utilizar o PM2 para gerenciar o processo do webserver (montar uma imagem docker).
 - NGINX
 
 Hospedar o FiscalizaJá é uma tarefa simples e o projeto consome poucos recursos. A única coisa que pesa aqui é o banco de dados.
