@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import axios from "axios";
 import genToken from "../../utils/genToken";
 import sessionUtils from "../../services/auth/sessionUtils";
+import FiscalizajaRestError from "../helpers/FiscalizajaRestError";
+import { APIErrors } from "../enums/APIErrors";
 
 dotenv.config()
 
@@ -47,9 +49,7 @@ async function ActivateAccount(req: FastifyRequest, res: FastifyReply) {
     if(result) {
         return "OK"
     } else {
-        res.status(404).send({
-            error: "Account not found"
-        })
+        res.status(404).send(FiscalizajaRestError(APIErrors.auth_account_not_found))
     }
 }
 
@@ -61,25 +61,17 @@ async function Login(req: FastifyRequest, res: FastifyReply) {
     const user = await auth.getUserInfoFromDatabaseByEmail(email)
 
     if(!user) {
-        return res.status(404).send({
-            error: "User not found",
-            code: "user_not_found"
-        })
+        return res.status(404).send(FiscalizajaRestError(APIErrors.auth_user_not_found))
     }
 
     if(!user.activated) {
-        return res.status(401).send({
-            error: "User not activated",
-            code: "user_not_activated"
-        })
+        return res.status(401).send(FiscalizajaRestError(APIErrors.auth_user_not_activated))
     }
 
     const validPassword = await sessionUtils.validateHash(plain_password, user.password)
 
     if(!validPassword) {
-        return res.status(401).send({
-            error: "Invalid password"
-        })
+        return res.status(401).send(FiscalizajaRestError(APIErrors.auth_wrong_password))
     }
 
     delete user.password // em hipotese alguma isso pode ir pro jwt

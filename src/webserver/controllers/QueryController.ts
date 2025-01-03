@@ -6,6 +6,8 @@ import { WebSocket } from "@fastify/websocket";
 import CamaraQueryHandler from "../../services/dadosabertos/camara/queryHandler";
 import SenadoQueryHandler from "../../services/dadosabertos/senado/queryHandler";
 import FullQueryHanlder, { HouseExpenses } from "../../services/full_query/queryHandler";
+import FiscalizajaRestError from "../helpers/FiscalizajaRestError";
+import { APIErrors } from "../enums/APIErrors";
 
 const fullquery = new FullQueryHanlder();
 
@@ -27,19 +29,13 @@ async function CreateQueryExpenses(req: FastifyRequest, res: FastifyReply) {
     }).filter(q => q)
 
     if(invalid_properties.length > 0) {
-        return res.status(400).send({
-            error: `Propriedade(s) inválidas: ${invalid_properties.join(",")}`,
-            code: "invalid_props"
-        })
+        return res.status(400).send(FiscalizajaRestError(APIErrors.full_query_invalid_props, invalid_properties))
     }
 
     const workers = await Queue.getWorkers()
 
     if(workers.length <= 0) {
-        return res.status(503).send({
-            error: "No momento, nossos servidores não podem processar nenhuma consulta, tente novamente mais tarde.",
-            code: "no_workers_available"
-        })
+        return res.status(503).send(FiscalizajaRestError(APIErrors.full_query_no_workers_available))
     }
 
     const jobs = await Queue.getJobs(['active', 'waiting'])
@@ -55,10 +51,7 @@ async function CreateQueryExpenses(req: FastifyRequest, res: FastifyReply) {
     }
 
     if(already_have_query) {
-        return res.status(429).send({
-            error: "Existe uma consulta sua em processamento ou na fila, por favor, aguarde.",
-            code: "too_many_queries"
-        })
+        return res.status(429).send(FiscalizajaRestError(APIErrors.full_query_too_many_queries))
     }
 
     const job_data = await Queue.add(`process-query-${user.id}`,
@@ -162,10 +155,7 @@ async function ViewJob(req: FastifyRequest, res: FastifyReply) {
     const params: { job: number } = req.params as any
 
     if(!user) {
-        return res.status(401).send({
-            error: "Você precisa estar logado para marcar um resultado como visto.",
-            code: "unhautorized"
-        })
+        return res.status(401).send(FiscalizajaRestError(APIErrors.full_query_unhautorized))
     }
 
     await fullquery.viewResult(params.job).then(() => {
@@ -173,10 +163,7 @@ async function ViewJob(req: FastifyRequest, res: FastifyReply) {
             message: "OK"
         })
     }).catch(e => {
-        return res.status(422).send({
-            message: "Resultado não existe.",
-            error: "not_found"
-        })
+        return res.status(422).send(FiscalizajaRestError(APIErrors.full_query_not_found))
     })
 }
 
